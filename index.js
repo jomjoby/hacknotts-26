@@ -25,8 +25,215 @@ function openApp(app) {
             break;
 
         case "purble-place":
-            // alert("Purble Place opened!");
+            openPurblePlace();
             break;
+    }
+}
+
+// Clippy can open and close desktop apps too ("open purble place").
+window.addEventListener('clippy:open-app', e => openApp(e.detail.id));
+window.addEventListener('clippy:close-app', e => {
+    if (e.detail.id === 'purble-place' && purbleWindow) purbleWindow.close();
+});
+
+
+// ---- Windows ----------------------------------------------------------------
+// Aero windows for desktop apps. makeWindow() gives back { el, body, close, minimise, restore, focus };
+// put the app inside `body`. Windows can be dragged by the title bar, resized from the corner,
+// maximised (double-click the title bar) and minimised to a taskbar button.
+
+const CAPTION_ICONS = {
+    min: '<svg viewBox="0 0 10 10"><rect x="1" y="6" width="8" height="2.5"/></svg>',
+    max: '<svg viewBox="0 0 10 10"><path d="M0 0h10v10H0zm2 3v5h6V3z"/></svg>',
+    close: '<svg viewBox="0 0 10 10"><path d="m0 1.5 1.5-1.5L5 3.5 8.5 0 10 1.5 6.5 5 10 8.5 8.5 10 5 6.5 1.5 10 0 8.5 3.5 5z"/></svg>',
+};
+
+const TASKBAR_SPACE = 80; // the taskbar's height plus its gap, kept clear when maximised
+
+// The highest window on screen (OS windows and the browser share one stack).
+function topZIndex() {
+    const windows = document.querySelectorAll('[data-app-window]');
+    return Math.max(100, ...[...windows].map(w => Number(w.style.zIndex) || 0));
+}
+
+function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight = 240, onClose, onMinimise, onRestore, onFocus }) {
+    const el = document.createElement('section');
+    el.className = 'os-window';
+    el.dataset.appWindow = id;
+    el.dataset.title = title;
+    el.innerHTML = `
+        <header class="os-titlebar">
+            <img class="os-title-icon" alt="">
+            <span class="os-title"></span>
+            <div class="os-caption">
+                <button class="os-min" type="button" aria-label="Minimise">${CAPTION_ICONS.min}</button>
+                <button class="os-max" type="button" aria-label="Maximise">${CAPTION_ICONS.max}</button>
+                <button class="os-close" type="button" aria-label="Close">${CAPTION_ICONS.close}</button>
+            </div>
+        </header>
+        <div class="os-window-body"></div>
+        <div class="os-resize"></div>`;
+    el.querySelector('.os-title-icon').src = icon;
+    el.querySelector('.os-title').textContent = title;
+    const body = el.querySelector('.os-window-body');
+
+    // width/height are the size of the app area; the frame adds 14px across and 37px down.
+    const w = Math.min(width + 14, innerWidth - 20);
+    const h = Math.min(height + 37, innerHeight - TASKBAR_SPACE - 20);
+    Object.assign(el.style, {
+        width: w + 'px',
+        height: h + 'px',
+        left: Math.max(10, (innerWidth - w) / 2) + 'px',
+        top: Math.max(10, (innerHeight - TASKBAR_SPACE - h) / 2) + 'px',
+        minWidth: minWidth + 14 + 'px',
+        minHeight: minHeight + 37 + 'px',
+    });
+    document.querySelector('.desktop').appendChild(el);
+
+    // Taskbar button: click to minimise, restore or bring to the front.
+    const taskbarBtn = document.createElement('div');
+    taskbarBtn.className = 'taskbar-btn os-taskbar-btn';
+    taskbarBtn.title = title;
+    taskbarBtn.innerHTML = '<img alt="">';
+    taskbarBtn.querySelector('img').src = icon;
+    document.querySelector('.taskbar').appendChild(taskbarBtn);
+
+    let restoreRect = null;
+    const isMinimised = () => el.classList.contains('os-minimised');
+    const isTop = () => Number(el.style.zIndex) >= topZIndex();
+
+    const win = {
+        el,
+        body,
+        focus() {
+            if (!isTop() || !el.style.zIndex) el.style.zIndex = topZIndex() + 1;
+            taskbarBtn.classList.add('active');
+            if (onFocus) onFocus();
+        },
+        minimise() {
+            el.classList.add('os-minimised');
+            taskbarBtn.classList.remove('active');
+            if (onMinimise) onMinimise();
+        },
+        restore() {
+            if (!isMinimised()) return;
+            el.classList.remove('os-minimised');
+            if (onRestore) onRestore();
+            win.focus();
+        },
+        close() {
+            if (onClose) onClose();
+            el.remove();
+            taskbarBtn.remove();
+        },
+    };
+
+    function toggleMaximise() {
+        if (restoreRect) {
+            Object.assign(el.style, restoreRect);
+            restoreRect = null;
+        } else {
+            restoreRect = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+            Object.assign(el.style, { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight - TASKBAR_SPACE + 'px' });
+        }
+        el.classList.toggle('os-maximised', !!restoreRect);
+    }
+
+    el.querySelector('.os-min').addEventListener('click', win.minimise);
+    el.querySelector('.os-max').addEventListener('click', toggleMaximise);
+    el.querySelector('.os-close').addEventListener('click', win.close);
+    el.addEventListener('pointerdown', () => win.focus(), true);
+    taskbarBtn.addEventListener('click', () => {
+        if (isMinimised()) win.restore();
+        else if (isTop()) win.minimise();
+        else win.focus();
+    });
+
+    // Drag by the title bar, and resize from the bottom-right corner.
+    function dragWith(handle, onMove) {
+        handle.addEventListener('pointerdown', e => {
+            if (e.button !== 0 || e.target.closest('.os-caption')) return;
+            const start = { x: e.clientX, y: e.clientY, left: el.offsetLeft, top: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+            handle.setPointerCapture(e.pointerId);
+            const move = ev => onMove(ev.clientX - start.x, ev.clientY - start.y, start);
+            const up = () => {
+                handle.removeEventListener('pointermove', move);
+                handle.removeEventListener('pointerup', up);
+            };
+            handle.addEventListener('pointermove', move);
+            handle.addEventListener('pointerup', up);
+        });
+    }
+
+    const titlebar = el.querySelector('.os-titlebar');
+    titlebar.addEventListener('dblclick', e => { if (!e.target.closest('.os-caption')) toggleMaximise(); });
+    dragWith(titlebar, (dx, dy, start) => {
+        if (restoreRect) return; // maximised windows stay put
+        el.style.left = Math.min(Math.max(start.left + dx, 80 - start.w), innerWidth - 80) + 'px';
+        el.style.top = Math.min(Math.max(start.top + dy, 0), innerHeight - TASKBAR_SPACE - 30) + 'px';
+    });
+    dragWith(el.querySelector('.os-resize'), (dx, dy, start) => {
+        el.style.width = start.w + dx + 'px';
+        el.style.height = start.h + dy + 'px';
+    });
+
+    win.focus();
+    return win;
+}
+
+
+// ---- Purble Place (purble-place/) ---------------------------------------------
+// The game is built from JavaScript modules, which browsers only load over http(s),
+// so it needs the OS opened through a local web server rather than as a file.
+
+let purble = null;
+let purbleWindow = null;
+
+async function openPurblePlace() {
+    if (purbleWindow) {
+        purbleWindow.restore();
+        purbleWindow.focus();
+        return;
+    }
+
+    const win = makeWindow({
+        id: 'purble-place',
+        title: 'Purble Place',
+        icon: 'images/purble-place.png',
+        width: 800,
+        height: 623,
+        minWidth: 480,
+        minHeight: 383,
+        onClose: () => {
+            if (purble) purble.destroy();
+            purble = null;
+            purbleWindow = null;
+        },
+        onMinimise: () => purble && purble.pause(),
+        onRestore: () => purble && purble.resume(),
+        onFocus: () => purble && purble.focus(),
+    });
+    purbleWindow = win;
+
+    const showProblem = text => {
+        win.body.innerHTML = '<div class="os-window-message"><b>Purble Place couldn\'t start</b><p></p></div>';
+        win.body.querySelector('p').textContent = text;
+    };
+
+    if (location.protocol === 'file:') {
+        showProblem('Purble Place needs the OS to be opened through a local web server, not straight from the file. ' +
+            'In the project folder run "python3 -m http.server 8000", then open http://localhost:8000/');
+        return;
+    }
+
+    try {
+        const { mount } = await import('./purble-place/src/index.js');
+        if (purbleWindow !== win) return; // closed while it was loading
+        purble = mount(win.body, { onExit: () => win.close() });
+        purble.focus();
+    } catch (err) {
+        console.error(err);
+        showProblem('The game files failed to load (' + err.message + ').');
     }
 }
 

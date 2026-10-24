@@ -322,7 +322,9 @@
 
   let win = null; // the one browser window: { el, tabs, active, ... }
   let tabCounter = 0;
-  let zTop = 100;
+  // Windows from the OS and the browser share one stack: whichever was clicked last is on top.
+  const topZ = () => Math.max(100, ...[...document.querySelectorAll('[data-app-window]')].map(w => Number(w.style.zIndex) || 0));
+  const isTop = () => win && Number(win.el.style.zIndex) >= topZ();
 
   const TEMPLATE = `
     <header class="rb-titlebar">
@@ -465,7 +467,7 @@
 
   function focusWindow() {
     if (!win) return;
-    win.el.style.zIndex = ++zTop;
+    if (!win.el.style.zIndex || !isTop()) win.el.style.zIndex = topZ() + 1;
     win.el.classList.remove('rb-inactive');
     updateTaskbarButton();
   }
@@ -547,7 +549,7 @@
     btn.appendChild(img);
     btn.addEventListener('click', () => {
       if (win.el.classList.contains('rb-minimized')) { restore(); focusWindow(); }
-      else if (Number(win.el.style.zIndex) === zTop) minimise();
+      else if (isTop()) minimise();
       else focusWindow();
     });
     taskbar.appendChild(btn);
@@ -556,7 +558,7 @@
 
   function updateTaskbarButton() {
     if (win && win.taskbarBtn) {
-      win.taskbarBtn.classList.toggle('rb-focused', !win.el.classList.contains('rb-minimized') && Number(win.el.style.zIndex) === zTop);
+      win.taskbarBtn.classList.toggle('rb-focused', !win.el.classList.contains('rb-minimized') && isTop());
     }
   }
 

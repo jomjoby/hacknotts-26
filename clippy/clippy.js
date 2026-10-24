@@ -1030,6 +1030,10 @@
     }
     const expr = toExpression(text);
     if (expr) return () => calculate(expr);
+    // "open/close/play <any app I know>" works even for app names the classifier has never seen.
+    const app = findApp(text);
+    if (app && /\b(open|launch|start|run|play|load)\b/i.test(text)) return () => openApp(app.id);
+    if (app && /\b(close|quit|exit|kill|shut)\b/i.test(text)) return () => closeApp(app.id);
     const [top, second] = classifier.classify(text);
     const clearWinner = top && second && top.confidence >= 1.5 * second.confidence;
     const onlyFit = top && top.coverage === 1 && (!second || second.coverage < 0.5);

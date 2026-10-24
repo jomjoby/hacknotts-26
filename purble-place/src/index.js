@@ -1,6 +1,6 @@
 // Purble Place – public entry point.
 //
-//   import { mount } from './apps/purble-place/src/index.js';
+//   import { mount } from './purble-place/src/index.js';
 //   const app = mount(document.getElementById('window-body'), { onExit: () => closeWindow() });
 //
 // See the README next to this folder's src/ for every option, event and method.

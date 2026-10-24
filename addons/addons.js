@@ -40,6 +40,16 @@
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.
       window.Clippy.init({ bottom: 80 });
+      window.Clippy.registerApp({
+        id: 'purble-place',
+        name: 'Purble Place',
+        aliases: ['purble place', 'purble', 'purple place', 'purple', 'game', 'games', 'cakes'],
+        tips: [
+          { text: 'Ooh, Purble Place! Tip: in Atrium Cakes, Ctrl+Z undoes a wrong icing. Baking is forever, though.' },
+          { text: 'Crack the Code tip: a gold peg means right colour, right spot. White means right colour, wrong spot.' },
+          { text: 'Pair Programming tip: in Final Year, every fourth miss a merge conflict swaps two tiles. Very realistic.' },
+        ],
+      });
       window.RetroBrowser.init({
         taskbar: '.taskbar',
         icon: root + 'images/Mozilla_Firefox_logo_2004.webp',
