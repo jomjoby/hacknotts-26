@@ -20,6 +20,7 @@ export const STAGE_H = 600;
 export const VERSION = '1.0.0';
 
 const DEFAULT_CSS = new URL('../styles/index.css', import.meta.url).href;
+const DEFAULT_SOUNDS = new URL('../../assets/sounds/', import.meta.url).href;
 
 // stylesheet reference counting per root node (document or shadow root)
 const styleRefs = new WeakMap();
@@ -62,14 +63,15 @@ export class PurblePlace extends Emitter {
     if (!container || !container.appendChild) throw new Error('PurblePlace: a container element is required');
     this.container = container;
     this.opts = {
-      menubar: true, sound: true, autoFocus: true, injectStyles: true, cssUrl: DEFAULT_CSS,
+      menubar: true, sound: true, autoFocus: true, injectStyles: true, cssUrl: DEFAULT_CSS, soundBase: DEFAULT_SOUNDS,
       storageKey: 'purble-place', maxScale: Infinity, ...options,
     };
     this.t = createTranslator(this.opts.strings);
     this.storage = createStorage(this.opts.storage, this.opts.storageKey);
     this.settings = { muted: false, colorblind: false, ...this.storage.get('settings', {}) };
     if (this.opts.sound === false) this.settings.muted = true;
-    this.sound = new Sound({ muted: this.settings.muted });
+    this.sound = new Sound({ muted: this.settings.muted, base: this.opts.soundBase || null });
+    this.sound.preload();   // about 4 MB; nothing is fetched while muted
     this.stats = new Stats(this.storage);
     this.rng = new Rng(this.opts.seed);
     this.view = 'hub';

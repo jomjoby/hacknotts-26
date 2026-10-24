@@ -8,11 +8,16 @@ export const SYMBOL_COUNT = 20;
  * Level table. Tweak freely – the view lays the board out from cols/rows.
  *  peek       seconds every tile is shown face-up before play starts
  *  swapEvery  every Nth mismatch two hidden tiles secretly trade places (0 = never)
+ *  maxTurns   the game is lost when this many turns are used and the board is not cleared (0 = no limit)
+ *
+ * The limits come from playing the boards with a simulated player. Second Year (12 pairs) takes a player who
+ * remembers six tiles about 19 turns, so 30 only catches careless play. Final Year (20 pairs) takes even perfect
+ * memory about 34 turns because of the swaps (39 at worst), so 42 is the tightest limit that can always be won.
  */
 export const PAIRS_LEVELS = {
-  beginner:     { cols: 4, rows: 3, peek: 3,   swapEvery: 0 },
-  intermediate: { cols: 6, rows: 4, peek: 1.5, swapEvery: 0 },
-  advanced:     { cols: 8, rows: 5, peek: 0,   swapEvery: 4 },
+  beginner:     { cols: 4, rows: 3, peek: 3,   swapEvery: 0, maxTurns: 0 },
+  intermediate: { cols: 6, rows: 4, peek: 1.5, swapEvery: 0, maxTurns: 30 },
+  advanced:     { cols: 8, rows: 5, peek: 0,   swapEvery: 4, maxTurns: 42 },
 };
 
 /** A "perfect-memory" game needs `pairs` turns; par allows some forgetting. */
@@ -32,7 +37,7 @@ export function scoreFor({ pairs, turns, mismatches, seconds }) {
 }
 
 export class PairsModel {
-  constructor({ cols, rows, rng, swapEvery = 0, symbolCount = SYMBOL_COUNT }) {
+  constructor({ cols, rows, rng, swapEvery = 0, maxTurns = 0, symbolCount = SYMBOL_COUNT }) {
     const total = cols * rows;
     if (total % 2) throw new Error('Board needs an even number of tiles');
     this.pairs = total / 2;
@@ -40,6 +45,7 @@ export class PairsModel {
     this.cols = cols;
     this.rows = rows;
     this.swapEvery = swapEvery;
+    this.maxTurns = maxTurns;
     this.rng = rng;
 
     const symbols = rng.sample(range(symbolCount), this.pairs);
@@ -55,6 +61,12 @@ export class PairsModel {
   }
 
   get done() { return this.matched === this.pairs; }
+
+  /** Turns left before the game is lost, or Infinity when the level has no limit. */
+  get turnsLeft() { return this.maxTurns > 0 ? Math.max(0, this.maxTurns - this.turns) : Infinity; }
+
+  /** Every turn is used and the board is not cleared: the game is lost. */
+  get outOfTurns() { return this.maxTurns > 0 && this.turns >= this.maxTurns && !this.done; }
 
   /**
    * Flip a tile. Returns a description of what happened so the view can animate:

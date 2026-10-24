@@ -7,6 +7,7 @@ import { PairsModel, PAIRS_LEVELS, starRating, scoreFor } from './logic.js';
 import { symbolSVG, symbolName, tileBackSVG, iconSVG } from './art.js';
 
 const BOARD = { x: 40, y: 96, w: 720, h: 476 };
+const LOW_TURNS = 5;   // the turns counter turns red at this many left
 
 export class PurblePairs extends MiniGame {
   init() {
@@ -17,12 +18,13 @@ export class PurblePairs extends MiniGame {
     };
     this.boardEl = h('div', { class: 'pr-board', role: 'grid' });
     this.banner = h('div', { class: 'pr-banner', 'aria-live': 'polite' });
+    this.turnsChip = h('div', { class: 'pr-chip' }, this.t('pairs.hud.turns'), ' ', this.hud.turns);
     this.el.append(
       h('div', { class: 'pr-table' }),
       h('div', { class: 'pr-hud' },
         h('div', { class: 'pr-chip' }, this.t('pairs.hud.pairs'), ' ', this.hud.pairs),
         h('div', { class: 'pr-chip pr-chip-title' }, this.def.title),
-        h('div', { class: 'pr-chip' }, this.t('pairs.hud.turns'), ' ', this.hud.turns),
+        this.turnsChip,
         h('div', { class: 'pr-chip' }, this.t('pairs.hud.time'), ' ', this.hud.time)),
       this.boardEl,
       this.banner);
@@ -45,6 +47,7 @@ export class PurblePairs extends MiniGame {
     this.buildBoard();
     this.updateHud(true);
     this.banner.classList.remove('is-on');
+    this.sound.play('pairs-new');
 
     if (cfg.peek > 0) {
       this.phase = 'peek';
@@ -121,7 +124,7 @@ export class PurblePairs extends MiniGame {
   }
 
   onTile(i) {
-    if (this.phase !== 'play' || this.paused || this.state !== 'playing') return;
+    if (this.phase !== 'play' || this.paused || this.state !== 'playing' || this.model.outOfTurns) return;
     const res = this.model.flip(i);
     if (res.type === 'ignored') return;
     this.started = true;
@@ -158,6 +161,7 @@ export class PurblePairs extends MiniGame {
         if (swapped) this.after(0.35, () => this.animateSwap(swapped));
       });
     }
+    if (this.model.outOfTurns) this.after(1.4, () => this.lose());   // let the last two tiles be seen first
     this.updateHud();
   }
 
@@ -181,8 +185,20 @@ export class PurblePairs extends MiniGame {
     const score = scoreFor({ pairs: m.pairs, turns: m.turns, mismatches: m.mismatches, seconds });
     this.finish({
       won: true, stars, score, time: seconds, moves: m.turns,
+      sound: 'pairs-win',
       title: this.t('pairs.win.title'),
       text: this.t('pairs.win.text', { pairs: m.pairs, turns: m.turns, time: fmtTime(seconds), score }),
+    });
+  }
+
+  lose() {
+    if (this.state !== 'playing') return;
+    const m = this.model;
+    this.finish({
+      won: false, time: Math.round(this.elapsed), moves: m.turns,
+      sound: 'lose-fanfare',
+      title: this.t('pairs.lose.title'),
+      text: this.t('pairs.lose.text', { found: m.matched, pairs: m.pairs, turns: m.maxTurns }),
     });
   }
 
@@ -199,7 +215,8 @@ export class PurblePairs extends MiniGame {
     const m = this.model;
     if (!m) return;
     this.hud.pairs.textContent = `${m.matched} / ${m.pairs}`;
-    this.hud.turns.textContent = String(m.turns);
+    this.hud.turns.textContent = m.maxTurns ? `${m.turns} / ${m.maxTurns}` : String(m.turns);
+    this.turnsChip.classList.toggle('is-low', m.maxTurns > 0 && m.turnsLeft <= LOW_TURNS);
     this.hud.time.textContent = fmtTime(this.elapsed || 0);
     if (force) this.hud.time.textContent = '0:00';
   }

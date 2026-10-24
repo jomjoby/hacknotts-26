@@ -385,7 +385,10 @@ export class CakeWorld extends Emitter {
         }
       } else {
         c.leave -= dt;
-        if (c.leave <= 0) this.customers = this.customers.filter((x) => x !== c);
+        if (c.leave <= 0) {
+          this.customers = this.customers.filter((x) => x !== c);
+          this.emit('leave', c);
+        }
       }
     }
   }

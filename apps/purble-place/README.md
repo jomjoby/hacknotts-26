@@ -23,7 +23,7 @@ drops straight into the OS your teammates are building.
 | Where | Game | What you do |
 | --- | --- | --- |
 | The CS Atrium | Atrium Cakes | Students order a cake. Build it along the conveyor belt (pan, batter, oven, icing, toppings) and click the student who ordered it. Three mistakes and the Atrium closes. Every station has a step back button (also Ctrl+Z) in case you pick the wrong icing. Baking can't be undone. |
-| The A32 Lab | Pair Programming | Memory game. Turn over two tiles at a time and find the pairs. Tiles are laptops, bugs, rubber ducks and so on. In Final Year a merge conflict swaps two face-down tiles every fourth miss. |
+| The A32 Lab | Pair Programming | Memory game. Turn over two tiles at a time and find the pairs. Tiles are laptops, bugs, rubber ducks and so on. In Final Year a merge conflict swaps two face-down tiles every fourth miss. Second Year has a limit of 30 turns and Final Year 42; use them all without clearing the board and you lose. First Year has no limit. |
 | The front door | Crack the Code | Work out the hidden row of colors for the door keypad. Gold peg means right color in the right spot, white peg means right color in the wrong spot. Drag or click to fill the row. |
 
 Each game has three levels: First Year, Second Year and Final Year. Stars and personal bests are saved in the
@@ -88,6 +88,7 @@ const app = mount(element, {
   startGame: 'comfy-cakes', // optional: skip the town square
   startLevel: 'beginner',   // optional
   sound: true,              // false starts muted
+  soundBase: '/purble/assets/sounds/', // optional: where the wav files are served from (null means no sound at all)
   seed: 42,                 // optional: same seed gives the same boards and orders
   storageKey: 'purble-place', // prefix for saved settings and stats
   storage: localStorage,    // any { getItem, setItem, removeItem }
@@ -131,15 +132,73 @@ There is also a `<purble-place>` HTML element (`src/element.js`) if you would ra
 | The town square picture, and where each game's clickable area sits in it | `src/shell/campus.js` (the `CAMPUS_SPOTS` rectangles match the drawing, so move them together) |
 | The Atrium Cakes room | `sceneMarkup()` in `src/games/comfy-cakes/art.js` |
 | Cake menu, customers, patience, oven timing | `src/games/comfy-cakes/config.js` and `logic.js` |
-| Pair Programming board sizes and tile icons | `PAIRS_LEVELS` in `src/games/purble-pairs/logic.js`, `SYMBOLS` in `art.js` |
+| Pair Programming board sizes, turn limits, tile icons | `PAIRS_LEVELS` (`maxTurns`, 0 for none) in `src/games/purble-pairs/logic.js`, `SYMBOLS` in `art.js` |
 | Code length, colors, guesses | `SHOP_LEVELS` in `src/games/purble-shop/logic.js` |
 | Colors, fonts, the Aero look | `src/styles/base.css` (variables at the top) and the other css files |
 
-Each game is split into `logic.js` (the rules, no DOM), `art.js` (SVG drawn in code) and `index.js` (the view). All the
-pictures and sounds are generated in code, so there are no image or audio files to manage.
+Each game is split into `logic.js` (the rules, no DOM), `art.js` (SVG drawn in code) and `index.js` (the view). The
+pictures are all drawn in code, so there are no image files to manage. The only audio files are the ones in
+`assets/sounds/` (see Sounds below).
 
 The cartoon font on the town square is whatever the visitor has (Comic Sans MS on Windows). To pin a different one, set
 `--pp-display-font` on `.pp-root`.
+
+## Sounds
+
+Every sound is one of the 22 original Purble Place recordings in `assets/sounds/`. There is no synthesized or generated
+audio anywhere in the code. `src/core/samples.js` holds the whole setup: each recording's file and volume trim, which
+recording each game sound plays, and the sounds that are silent because there is no recording for them. The 18 Comfy
+Cakes wavs are the supplied 32-bit files converted to 16-bit and trimmed, because every browser decodes 16-bit; the 4
+mp3s are used as they came. Everything is fetched when the game is mounted (about 4.5 MB in all, nothing while muted). A
+sound asked for before its file has arrived stays silent that one time.
+
+| Action in Comfy Cakes | Sound name | File |
+| --- | --- | --- |
+| Level starts | `tv-on` | PURBLES_TVON_DING |
+| Customer walks in | `chef-enter` | PURBLES_CHEFENTER |
+| Customer leaves | `chef-exit` | PURBLES_CHEFEXIT |
+| Choose a pan | `cake-pan` | PURBLES_CAKEPANBUTTON |
+| Press a batter flavour | `cake-batter` | PURBLES_CAKEBATTERBUTTON |
+| The batter filling the pan (a beat later) | `cake-filling` | PURBLES_CAKEFILLINGBUTTON |
+| Cake goes into the oven | `cake-flame` | PURBLES_FLAMEBUTTON |
+| Take out button | `cake-button` | PURBLES_CAKEBUTTONS |
+| Pick an icing | `cake-frosting` | PURBLES_FROSTINGBUTTON |
+| Add a topping | `cake-decor` | PURBLES_DECORATIONSBUTTONS |
+| A topping wraps back to none | `cake-rotate` | PURBLES_ROTATEBUTTON |
+| Done on the toppings | `cake-next`, then `cake-shaker` | PURBLES_RIGHTARROWBUTTON, PURBLES_SHAKERBUTTON |
+| Step back, or Ctrl+Z | `cake-back` | PURBLES_LEFTARROWBUTTON |
+| Belt moves a cake on | `cake-belt` | PURBLES_CONVEYOR |
+| Cake reaches the counter | `cake-boxed` | PURBLES_CAKEBOXED |
+| Bin | `cake-dumped` | PURBLES_CAKEDUMPED |
+| Win a level | `comfy-win` | PURBLES_COMFYWIN |
+
+I picked the matches from the file names, so if one feels wrong, change the name used in the `bindWorld()` method in
+`src/games/comfy-cakes/index.js`. To swap a recording, replace the file and keep its name, or change `file` in
+`samples.js`. A game can ask for a different jingle at the end by passing `sound: 'name'` to `finish()`.
+
+Pair Programming, Crack the Code and the menus have a few recordings of their own (the mp3s). Everything else borrows the
+closest fit, through `ALIASES` in `samples.js`:
+
+| Where | Action | Plays | File |
+| --- | --- | --- | --- |
+| Menus, dialogs, town square | any button | `button-click` | BUTTON_CLICK.mp3 |
+| Pair Programming | a new board is dealt | `pairs-new` | PAIRS_NEW_BOARD.mp3 |
+| Pair Programming | the board is cleared | `pairs-win` | PAIRS_WIN.mp3 |
+| Pair Programming | out of turns (Second and Final Year) | `lose-fanfare` | LOSE_FANFARE.mp3 |
+| Crack the Code | out of guesses | `lose-fanfare` | LOSE_FANFARE.mp3 |
+| Pair Programming | flip a tile, flip it back | `cake-rotate` | borrowed from Comfy Cakes |
+| Pair Programming | a match | `cake-next` | borrowed |
+| Pair Programming | tiles swap places | `cake-belt` | borrowed |
+| Crack the Code | place a peg | `cake-decor` | borrowed |
+| Crack the Code | remove a peg | `cake-back` | borrowed |
+| Crack the Code | check the row | `cake-next` | borrowed |
+| Crack the Code | hint | `button-click` | BUTTON_CLICK.mp3 |
+| Crack the Code | cracked it | `comfy-win` | borrowed |
+
+These are silent, because no recording exists for them yet: the oven ding, the wrong cake and strike sound, the serve
+sound, a mismatch in Pair Programming, and losing Atrium Cakes. The code still asks for them by name (`ding`, `strike`,
+`serve`, `mismatch`, `lose`), so giving one a sound is a new file plus one line in `samples.js`. Real recordings for the
+borrowed ones would replace them the same way.
 
 ## Adding another game
 
@@ -154,19 +213,20 @@ does this so the three names don't crowd each other).
 ## Tests
 
 Start a server and open `/apps/purble-place/test/index.html`. The tab title says `PASS` and the count when everything
-is fine (172 tests: rules for all three games, a bot that plays every Comfy Cakes level, the undo feature, menus,
-drag and drop, the custom element).
+is fine (210 tests: rules for all three games, a bot that plays every Comfy Cakes level, the undo feature, the sound
+files and which action plays which, menus, drag and drop, the custom element).
 
 ## Folder layout
 
 ```
 apps/purble-place/
   index.html            the game in a full browser tab
+  assets/sounds/        the 22 original recordings (wav and mp3)
   src/
     index.js            mount(), registerGame(), manifest
     element.js          <purble-place> element
     shell/              app shell, town square, campus scene (campus.js), menu bar
-    core/               game base class, dialogs, audio, storage, characters
+    core/               game base class, dialogs, audio (audio.js, samples.js), storage, characters
     games/
       comfy-cakes/      config.js  logic.js  art.js  index.js
       purble-pairs/     logic.js  art.js  index.js
@@ -180,5 +240,7 @@ apps/purble-place/
 
 ## About the name
 
-Purble Place and its characters are Microsoft's. Nothing from Microsoft is in this folder: no files were taken from
-the original game, and all the art and sound is generated by the code here.
+Purble Place and its characters are Microsoft's. The code and all the pictures here are new, drawn from scratch. The
+exception is `assets/sounds/`: those 22 files are the original Purble Place recordings, copied from the Windows 7
+games and not licensed for this project. Keep that in mind before making the repository public. Deleting the folder is
+safe: the game runs the same, just without sound (`soundBase: null` does the same on purpose).

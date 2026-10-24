@@ -363,6 +363,72 @@ describe('Purble Pairs – UI', () => {
     assert.equal(g.model.mismatches, 4);
     t.done();
   });
+  // one deliberate miss: two face-down tiles that do not match
+  const miss = (g) => {
+    const a = g.model.tiles.find((x) => x.state === 'down');
+    const d = g.model.tiles.find((x) => x.state === 'down' && x.symbol !== a.symbol);
+    g.onTile(a.index); g.onTile(d.index);
+  };
+  it('turn limit: First Year has none, Second and Final Year show used / allowed', async () => {
+    const t = await boot();
+    const turns = () => $(t.app, '.pr-hud .pr-chip:nth-child(3)').textContent;
+    t.app.openGame('purble-pairs', 'beginner'); assert.equal(turns(), 'Turns 0');
+    t.app.openGame('purble-pairs', 'intermediate'); assert.equal(turns(), 'Turns 0 / 30');
+    t.app.openGame('purble-pairs', 'advanced'); assert.equal(turns(), 'Turns 0 / 42');
+    t.done();
+  });
+  it('turn limit: the counter goes red with 5 turns left, and using them all without clearing the board loses', async () => {
+    const t = await boot();
+    t.app.openGame('purble-pairs', 'intermediate'); const g = t.app.game; step(t.app, 2);
+    let end = null; t.app.on('game:end', (e) => { end = e; });
+    for (let n = 1; n <= 24; n++) { miss(g); step(t.app, 0.1); }
+    assert.equal($$(t.app, '.pr-chip.is-low').length, 0, '6 left is not low yet');
+    miss(g); step(t.app, 0.1);
+    assert.equal($$(t.app, '.pr-chip.is-low').length, 1, '5 left');
+    for (let n = 26; n <= 29; n++) { miss(g); step(t.app, 0.1); }
+    assert.equal(g.model.turns, 29); assert.equal(g.state, 'playing');
+    miss(g);                                               // the 30th and last turn
+    assert.equal(g.model.turns, 30);
+    assert.equal(g.state, 'playing', 'the last two tiles are shown before the result');
+    const before = g.model.turns;
+    g.onTile(g.model.tiles.find((x) => x.state === 'down').index);
+    assert.equal(g.model.turns, before); assert.equal(g.model.first, null, 'no more tiles can be turned');
+    step(t.app, 2);
+    assert.equal(g.state, 'over');
+    assert.ok(end && end.won === false && end.game === 'purble-pairs' && end.moves === 30, JSON.stringify(end));
+    assert.ok($$(t.app, '.pp-dialog').some((d) => d.textContent.includes('Out of turns')));
+    assert.ok(dialogButton(t.app, 'Play again'));
+    t.done();
+  });
+  it('turn limit: clearing the board on the very last turn is a win, and Play again deals a fresh limit', async () => {
+    const t = await boot();
+    t.app.openGame('purble-pairs', 'intermediate'); const g = t.app.game; step(t.app, 2);
+    g.model.maxTurns = g.model.pairs;                      // only a perfect game fits
+    let end = null; t.app.on('game:end', (e) => { end = e; });
+    for (let i = 0; i < g.model.tiles.length; i++) {
+      if (g.model.tiles[i].state !== 'down') continue;
+      const mate = g.model.tiles.find((x) => x.index !== i && x.symbol === g.model.tiles[i].symbol).index;
+      g.onTile(i); g.onTile(mate); step(t.app, 0.5);
+    }
+    assert.equal(g.model.turns, g.model.maxTurns); assert.equal(g.model.outOfTurns, false);
+    step(t.app, 2);
+    assert.ok(end && end.won === true, JSON.stringify(end));
+    dialogButton(t.app, 'Play again').click();
+    assert.equal(g.model.maxTurns, 30); assert.equal(g.model.turns, 0);
+    t.done();
+  });
+  it('turn limit: it is the same on Final Year, and a match on the last turn that leaves tiles still loses', async () => {
+    const t = await boot();
+    t.app.openGame('purble-pairs', 'advanced'); const g = t.app.game; step(t.app, 0.2);
+    g.model.maxTurns = 1;
+    const a = g.model.tiles[0]; const mate = g.model.tiles.find((x) => x.index !== 0 && x.symbol === a.symbol).index;
+    g.onTile(0); g.onTile(mate);
+    assert.equal(g.model.matched, 1); assert.equal(g.model.outOfTurns, true);
+    step(t.app, 2);
+    assert.equal(g.state, 'over');
+    assert.ok($$(t.app, '.pp-dialog').some((d) => d.textContent.includes('1 of 20 pairs in 1 turns')));
+    t.done();
+  });
 });
 
 describe('Purble Shop – UI', () => {

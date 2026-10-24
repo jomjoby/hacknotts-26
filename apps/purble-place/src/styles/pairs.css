@@ -40,6 +40,11 @@
   text-align: center;
 }
 .pr-chip b { font-size: 20px; margin-left: 4px; }
+.pr-chip.is-low {
+  border-color: #6a0d0d;
+  background: linear-gradient(#ffe3e0 0%, #ffb3ab 49%, #ee6a5c 50%, #ff9a8d 100%);
+  color: #6a0d0d;
+}
 .pr-chip-title {
   flex: 1;
   min-width: 0;
