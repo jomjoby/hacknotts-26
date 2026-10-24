@@ -81,6 +81,7 @@ body {
 
 .taskbar {
     position: fixed;
+    z-index: 9000; /* always above open windows (they start at 100) */
     bottom: 10px;
     left: 10px;
     right: 10px;
@@ -174,6 +175,7 @@ body {
 .start-menu {
     display: none;
     position: fixed;
+    z-index: 9001; /* above the taskbar and every window, like Windows 7 */
     bottom: 80px;
     left: 10px;
 
