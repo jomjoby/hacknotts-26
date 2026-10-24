@@ -9,6 +9,21 @@ function startMenu() {
     }
 }
 
+function openApp(app) {
+    switch (app) {
+        case "firefox":
+            // window.open("https://www.google.com", "_blank");
+            break;
+
+        case "recycle-bin":
+            // alert("Recycle Bin opened!");
+            break;
+
+        case "purble-place":
+            // alert("Purble Place opened!");
+            break;
+    }
+}
 
 // Desktop icons snap to a grid, like Windows: click an icon to select it, drag it
 // anywhere and it snaps into the nearest cell (swapping with any icon already there).
@@ -112,7 +127,10 @@ function startMenu() {
           icon.removeEventListener('pointermove', move);
           icon.removeEventListener('pointerup', up);
           icon.removeEventListener('pointercancel', up);
-          if (!dragging) return;
+          if (!dragging) {
+            openApp(icon.dataset.id);
+            return;
+}
           icon.classList.remove('dragging');
           icon.style.transform = '';
 

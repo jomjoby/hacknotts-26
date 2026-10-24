@@ -86,7 +86,7 @@ body {
     left: 10px;
 
     width: 30%;
-    height: 50%;
+    height: 60%;
 
     background: linear-gradient(
         to bottom,
@@ -122,6 +122,7 @@ body {
     height: 76px;
     padding: 6px;
     justify-self: center;
+    text-align: center;
     border: 1px solid transparent;
     border-radius: 3px;
     pointer-events: auto;
@@ -151,4 +152,13 @@ body {
     position: relative;
     z-index: 10;
     opacity: 0.75;
+}
+
+.desktop-icon span {
+    color: white;
+    font-family: Tahoma, sans-serif;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px black;
+    max-width: 80px;
+    overflow-wrap: anywhere;
 }
