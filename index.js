@@ -16,7 +16,8 @@ function shutDown() {
 function openApp(app) {
     switch (app) {
         case "firefox":
-            // window.open("https://www.google.com", "_blank");
+            // The retro browser (browser/), loaded by addons/addons.js.
+            if (window.RetroBrowser) RetroBrowser.open();
             break;
 
         case "recycle-bin":

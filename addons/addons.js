@@ -37,10 +37,10 @@
 
   Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js')])
     .then(() => {
-      // Settings that match the OS: its taskbar is 80px tall, and its Firefox desktop icon opens the browser.
+      // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
+      // in index.js opens the browser when its Internet icon is clicked.
       window.Clippy.init({ bottom: 80 });
       window.RetroBrowser.init({
-        launcher: '.desktop-icon',
         taskbar: '.taskbar',
         icon: root + 'images/Mozilla_Firefox_logo_2004.webp',
         bottom: 80,

@@ -95,6 +95,20 @@
     description: 'The finest portal on the information superhighway. News, chat, search and more.',
   });
 
+  // FunForum: the team's community forum (fhome.html etc. at the repo root). Each page gets
+  // its own address so the address bar follows the forum's own links.
+  const FORUM_DESCRIPTION = 'The friendliest community chat on the web. General, Games, Movies & TV and Sports channels.';
+  registerSite({
+    address: 'www.funforum.co.uk',
+    aliases: ['funforum', 'fun forum', 'forum', 'funforum.co.uk', 'www.funforum.com', 'funforum.com'],
+    title: 'FunForum',
+    src: 'fhome.html',
+    description: FORUM_DESCRIPTION,
+  });
+  registerSite({ address: 'www.funforum.co.uk/forum', title: 'FunForum - Forum', src: 'forum.html', description: FORUM_DESCRIPTION });
+  registerSite({ address: 'www.funforum.co.uk/news', title: 'FunForum - News', src: 'fabout.html', description: FORUM_DESCRIPTION });
+  registerSite({ address: 'www.funforum.co.uk/login', title: 'FunForum - Login', src: 'flog.html', description: FORUM_DESCRIPTION });
+
   registerSite({
     address: 'messenger.msn.com',
     aliases: ['msn', 'msn.com', 'www.msn.com', 'messenger', 'msn messenger', 'messenger.msn.co.uk'],
@@ -352,6 +366,7 @@
   const BOOKMARKS = [
     { label: 'NottsNet', address: 'www.nottsnet.co.uk' },
     { label: 'MSN Messenger', address: 'messenger.msn.com' },
+    { label: 'FunForum', address: 'www.funforum.co.uk' },
     { label: 'Google', address: 'www.google.com' },
     { label: 'YouTube', address: 'www.youtube.com' },
     { label: 'MySpace', address: 'www.myspace.com' },

@@ -1,0 +1,223 @@
+body{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background: url(images/pattern.jpg) repeat;
+}
+
+#mainBar{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 800px;
+    margin: 0 auto;
+    border: 2px inset black;
+}
+
+#navBar{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: white;
+    background-image: linear-gradient(#B2CBDA,white 40%,#B2CBDA);
+    box-shadow: 0 2px 10px 0px black, inset 0 0 4px 1px white;
+    width: 100%;
+}
+
+#navBar ul{
+    height: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#navBar a{
+    text-decoration: none;
+    color: navy;
+}
+
+#navBar a:visited{
+    color: navy;
+}
+
+#mainBody{
+    padding: 10px;
+    background-color: white;
+    height: 100%
+}
+
+.authCard{
+    padding: 20px;
+}
+
+#register{
+    display: none;
+}
+
+#register:target{
+    display: block;
+}
+
+#register:target ~ #login{
+    display: none;
+}
+
+
+.authCard h1{
+    margin-top: 0;
+    color: navy;
+}
+
+.authCard form > div{
+    margin-bottom: 16px;
+}
+
+.authCard label{
+    display: block;
+    margin-bottom: 6px;
+}
+
+.authCard input{
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #b8c2d1;
+}
+
+.authCard button{
+    color: #ffffff;
+    padding: 9px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #3b6b9e 0%, #24517f 46%, #163d66 50%, #0d2b4d 85%, #061a33 100%);
+    border-color: #081f3d;
+    box-shadow: 0 0 8px rgba(20, 65, 120, 0.5), 0 1px 4px rgba(0, 15, 45, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 10, 35, 0.5);
+    cursor: pointer;
+}
+
+.authCard p{
+    margin-bottom: 0;
+}
+
+.authCard a{
+    color: navy;
+}
+
+.forumSection {
+    margin-bottom: 1.5em; 
+}
+.forumStatus {
+    padding: 0.6em 0.8em;
+    border-radius: 6px;
+    background: rgba(128, 128, 128, 0.15);
+    margin-bottom: 1em;
+    color: #022040;
+    background: linear-gradient(180deg, #e3f3ff 0%, #c5e6fc 46%, #9fd3f7 50%, #bbe3fb 85%, #dcf1ff 100%);
+    border-color: #3b88cc;
+    box-shadow: 0 0 8px rgba(45, 140, 235, 0.5), 0 1px 4px rgba(0, 45, 95, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(60, 130, 195, 0.45);
+}
+#chatBox {
+    height: 350px;
+    overflow-y: auto;
+    border: 1px solid rgba(128, 128, 128, 0.5);
+    border-radius: 6px;
+    padding: 0.6em;
+    margin-bottom: 0.8em;
+}
+.chatMsg {
+    margin-bottom: 0.6em;
+    word-wrap: break-word;
+}
+.chatMsg .chatUser {
+    font-weight: bold;
+}
+.chatMsg .chatTime {
+    font-size: 0.75em;
+    opacity: 0.6;
+    margin-left: 0.5em;
+}
+.chatMsg .chatText {
+    display: block;
+}
+#chatForm {
+    display: flex;
+    gap: 0.5em;
+}
+#chatSend{
+    color: #ffffff;
+    background: linear-gradient(180deg, #f87171 0%, #ef4444 46%, #dc2626 50%, #b91c1c 85%, #7f1d1d 100%);
+    border-color: #991b1b;
+    border-radius: 6px;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.5), 0 1px 4px rgba(95, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(80, 0, 0, 0.5);
+    cursor: pointer;
+}
+#chatInput {
+    flex: 1;
+    padding: 0.5em;
+}
+#chatError {
+    color: #c0392b;
+    min-height: 1.2em;
+    font-size: 0.9em;
+}
+.forumRules li {
+    margin-bottom: 0.3em;
+}
+#channelTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-bottom: 0.8em;
+}
+#channelTabs button {
+    padding: 0.5em 1em;
+    cursor: pointer;
+    border: 1px solid rgba(122, 166, 207, 0.5);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    color: #0d3460;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+    background: linear-gradient(180deg, #ffffff 0%, #edf5fc 46%, #d3e7f8 50%, #e2f1fc 85%, #f4faff 100%) !important;
+    box-shadow: 0 1px 3px rgba(10, 45, 85, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(140, 185, 225, 0.45) !important;
+}
+#channelTabs button.active {
+    font-weight: bold;
+    background: rgba(128, 128, 128, 0.25);
+    font-weight: 700;
+    color: #022040;
+    background: linear-gradient(180deg, #e3f3ff 0%, #c5e6fc 46%, #9fd3f7 50%, #bbe3fb 85%, #dcf1ff 100%);
+    border-color: #3b88cc;
+    box-shadow: 0 0 8px rgba(45, 140, 235, 0.5), 0 1px 4px rgba(0, 45, 95, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(60, 130, 195, 0.45);
+}
+    #channelDesc {
+    opacity: 0.75;
+    margin-top: 0;
+}
+.chatTag {
+    font-size: 0.65em;
+    font-weight: bold;
+    margin-left: 0.5em;
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    background: #c0392b;
+    color: #fff;
+    vertical-align: middle;
+}
+.chatText.spoilerHidden {
+    background: #555; 
+    color: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+.chatText.spoilerHidden:hover, .chatText.spoilerHidden:focus {
+    background: #666;
+}
+#spoilerLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    white-space: nowrap;
+    cursor: pointer; 
+}
