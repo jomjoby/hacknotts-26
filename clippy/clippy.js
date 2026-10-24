@@ -328,6 +328,10 @@
       'Testing, testing. One, two. Is this thing on?',
       'I can talk! Prepare to be mildly impressed.',
     ],
+    voice_missing: [
+      "I'd love to talk, but this computer has no voices installed for the browser. On Linux, installing speech-dispatcher and espeak-ng fixes it. Text only for now!",
+      "I can't find a voice on this computer, so I'm stuck typing. (Linux? Install speech-dispatcher and espeak-ng, then restart the browser.)",
+    ],
     voice_off: ["OK, I'll stick to text bubbles.", 'Voice off. Back to the strong, silent type.', 'Muted. I was getting a sore throat anyway.'],
     hide: [
       'Bye for now! Press F1 if you need me.',
@@ -989,7 +993,7 @@
         : line('notes_empty');
     },
     name_get: () => line(state.name ? 'name_get' : 'name_unknown'),
-    voice_on: () => { setVoice(true); return line('voice_on'); },
+    voice_on: () => turnVoiceOn(),
     voice_off: () => { setVoice(false); return line('voice_off'); },
     quiet: () => {
       setChattiness('quiet');
@@ -1336,6 +1340,28 @@
     speechSynthesis.speak(utterance);
   }
 
+  // Voices load asynchronously in some browsers, so wait briefly for them.
+  function voicesReady() {
+    if (!window.speechSynthesis) return Promise.resolve([]);
+    const voices = speechSynthesis.getVoices();
+    if (voices.length) return Promise.resolve(voices);
+    return new Promise(resolve => {
+      const done = () => resolve(speechSynthesis.getVoices());
+      speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+      setTimeout(done, 1500);
+    });
+  }
+
+  async function turnVoiceOn() {
+    const voices = await voicesReady();
+    if (!voices.length) {
+      setVoice(false);
+      return line('voice_missing');
+    }
+    setVoice(true);
+    return line('voice_on');
+  }
+
   function setVoice(on) {
     state.voice = on;
     store.set('voice', on);
@@ -1409,8 +1435,8 @@
       handleInput(text);
     });
     voiceButton.addEventListener('click', () => {
-      setVoice(!state.voice);
-      say(line(state.voice ? 'voice_on' : 'voice_off'));
+      if (state.voice) { setVoice(false); say(line('voice_off')); }
+      else turnVoiceOn().then(say);
     });
     textEl.addEventListener('click', () => state.typingDone && state.typingDone());
     charEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePrompt(); } });
