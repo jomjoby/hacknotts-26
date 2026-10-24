@@ -22,13 +22,54 @@
     taskbar: null,                // CSS selector for a taskbar to add a button to while open (optional)
     bottom: 80,                   // space to leave for the taskbar
     base: '',                     // prefix for site file paths, if the OS isn't at the site root
+    year: 2006,                   // real websites are shown as they were in this year (via the Wayback Machine)
   };
+
+  // Real websites can't be shown live: almost all of them (Google, Bing...) tell browsers not to
+  // display them inside another page. The Wayback Machine's archived copies can be, which also
+  // makes them look properly 2000s. Famous sites get a shortcut and their best retro year.
+  const FAMOUS = {
+    google: ['www.google.com', 2005, 'Google'],
+    youtube: ['www.youtube.com', 2006, 'YouTube'],
+    myspace: ['www.myspace.com', 2006, 'MySpace'],
+    bebo: ['www.bebo.com', 2007, 'Bebo'],
+    facebook: ['www.facebook.com', 2006, 'Facebook'],
+    wikipedia: ['www.wikipedia.org', 2005, 'Wikipedia'],
+    bbc: ['news.bbc.co.uk', 2005, 'BBC News'],
+    yahoo: ['www.yahoo.com', 2005, 'Yahoo!'],
+    amazon: ['www.amazon.co.uk', 2005, 'Amazon.co.uk'],
+    ebay: ['www.ebay.co.uk', 2005, 'eBay'],
+    neopets: ['www.neopets.com', 2004, 'Neopets'],
+    hotmail: ['www.hotmail.com', 2004, 'Hotmail'],
+    geocities: ['www.geocities.com', 2004, 'GeoCities'],
+  };
+
+  const famousFor = address => {
+    const domain = normalise(address).split('/')[0];
+    return Object.values(FAMOUS).find(([host]) => host === domain || host.replace(/^www\./, '') === domain.replace(/^www\./, ''));
+  };
+
+  // The few real sites that allow being shown live inside another page.
+  const LIVE_HOSTS = /(^|\.)wikipedia\.org$/;
+
+  // "if_" asks for the archived page without the Wayback Machine's own toolbar.
+  const waybackUrl = entry => `https://web.archive.org/web/${entry.year}if_/http://${entry.address}${entry.address.includes('/') ? '' : '/'}`;
+  const liveUrl = entry => 'https://' + entry.address;
+  const favicon = address => `https://icons.duckduckgo.com/ip3/${hostOf(address)}.ico`;
 
   // ------------------------------------------------------------------ sites
 
   const sites = [];
 
-  const normalise = address => address.trim().toLowerCase().replace(/^[a-z]+:\/\//, '').replace(/\/+$/, '');
+  // "HTTP://WWW.Example.com/Some_Page/" -> "www.example.com/Some_Page" (paths keep their case).
+  const normalise = address => {
+    const a = address.trim().replace(/^[a-z]+:\/\//i, '').replace(/\/+$/, '');
+    const slash = a.indexOf('/');
+    return slash < 0 ? a.toLowerCase() : a.slice(0, slash).toLowerCase() + a.slice(slash);
+  };
+  const decode = s => { try { return decodeURIComponent(s); } catch { return s; } };
+  const hostOf = address => normalise(address).split('/')[0];
+  const looksLikeAddress = text => !/\s/.test(text.trim()) && /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(normalise(text));
 
   // { address, aliases, title, src, description, icon, app }
   // app: an app id (like 'msn') announced to Clippy while the site is on screen.
@@ -66,6 +107,8 @@
   // -------------------------------------------------------------- helpers
 
   const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Added to our own pages' addresses so browsers don't show stale copies while we're editing them.
+  const FRESH = '?v=' + Date.now();
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
@@ -107,16 +150,18 @@
     button { padding: 4px 14px; border: 1px solid #707070; border-radius: 3px; background: linear-gradient(#f2f2f2, #ebebeb 50%, #dddddd 51%, #cfcfcf); font: 12px Tahoma, sans-serif; cursor: pointer; }
     button:hover { border-color: #3c7fb1; background: linear-gradient(#eaf6fd, #d9f0fc 50%, #bee6fd 51%, #a7d9f5); }`;
 
-  function errorPage(address) {
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Server not found</title><style>${PAGE_STYLE}
+  function errorPage(address, offline) {
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${offline ? 'Offline' : 'Server not found'}</title><style>${PAGE_STYLE}
       .box { border-left: 6px solid #e8a33c; }
       .icon { float: left; margin: 0 16px 8px 0; font: bold 40px Georgia, serif; color: #e8a33c; }</style></head>
-      <body><div class="box"><div class="icon">!</div><h1>Server not found</h1>
-      <p>${escapeHtml(config.name)} can't find the server at <b>${escapeHtml(address)}</b>.</p>
+      <body><div class="box"><div class="icon">!</div><h1>${offline ? "You're offline" : 'Server not found'}</h1>
+      <p>${offline
+        ? `${escapeHtml(config.name)} needs an internet connection to visit <b>${escapeHtml(address)}</b>.`
+        : `${escapeHtml(config.name)} can't find the server at <b>${escapeHtml(address)}</b>.`}</p>
       <ul>
         <li>Check the address for typing errors such as <b>ww</b>.example.com instead of <b>www</b>.example.com.</li>
         <li>Check your modem is plugged in, and that nobody has picked up the phone.</li>
-        <li>This web only knows a few sites. Try <a data-goto="www.nottsnet.co.uk">NottsNet</a> or <a data-goto="messenger.msn.com">MSN Messenger</a>.</li>
+        <li>Our own sites always work: try <a data-goto="www.nottsnet.co.uk">NottsNet</a> or <a data-goto="messenger.msn.com">MSN Messenger</a>.</li>
       </ul>
       <p><button onclick="location.reload()">Try Again</button></p></div></body></html>`;
   }
@@ -136,28 +181,127 @@
     { title: "Clippy's Fan Club - Members Area", address: 'www.clippyfans.org', description: 'It looks like you are searching for fun. Would you like help with that?' },
   ];
 
-  function searchPage(query) {
+  // Made-up sites from our pages: these get "Server not found" rather than a Wayback lookup.
+  const FAKE_SITES = new Set(JOKE_RESULTS.map(r => r.address));
+
+  async function getJson(url, timeout = 6000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      return res.ok ? await res.json() : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const plainText = html => new DOMParser().parseFromString(html, 'text/html').body.textContent;
+  const shorten = (text, max = 180) => (text.length > max ? text.slice(0, max).replace(/\s+\S*$/, '') + '...' : text);
+
+  // Real results with no account or key: DuckDuckGo instant answers (a topic's official site),
+  // a Wayback check for www.<word>.com, and Wikipedia search. Anything that fails is skipped.
+  async function webResults(query) {
+    if (navigator.onLine === false) return [];
+    const q = encodeURIComponent(query);
+    const word = /^[a-z0-9-]+$/i.test(query) ? query.toLowerCase() : null;
+    const [ddg, wiki, guess] = await Promise.all([
+      getJson(`https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&skip_disambig=1`),
+      getJson(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${q}&format=json&origin=*&srlimit=6`),
+      word ? getJson(`https://archive.org/wayback/available?url=${word}.com&timestamp=${config.year}`) : null,
+    ]);
+
+    const results = [];
+    for (const r of (ddg && ddg.Results) || []) {
+      const host = hostOf(r.FirstURL);
+      results.push({
+        title: `${ddg.Heading || host} - Official Site`,
+        address: host,
+        description: shorten(ddg.AbstractText || r.Text || `The official ${ddg.Heading || host} website.`),
+      });
+    }
+    const snapshot = guess && guess.archived_snapshots && guess.archived_snapshots.closest;
+    if (snapshot && snapshot.available) {
+      results.push({
+        title: `www.${word}.com`,
+        address: `www.${word}.com`,
+        description: `The ${word} website, as it looked in ${snapshot.timestamp.slice(0, 4)}.`,
+      });
+    }
+    for (const page of (wiki && wiki.query && wiki.query.search) || []) {
+      results.push({
+        title: `${page.title} - Wikipedia`,
+        address: 'en.wikipedia.org/wiki/' + encodeURIComponent(page.title.replace(/ /g, '_')),
+        description: shorten(plainText(page.snippet)),
+      });
+    }
+    return results;
+  }
+
+  async function searchPage(query) {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const matches = sites.filter(s => words.some(w => [s.title, s.address, s.description, ...s.aliases].join(' ').toLowerCase().includes(w)));
-    const results = [...matches, ...JOKE_RESULTS].map(r => `
-      <div class="result"><a data-goto="${escapeHtml(r.address)}">${escapeHtml(r.title)}</a>
-      <div class="url">http://${escapeHtml(r.address)}/</div><div>${escapeHtml(r.description)}</div></div>`).join('');
-    return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(query)} - Notts Search</title><style>${PAGE_STYLE}
-      body { background: #fff; }
-      header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid #c9d4e2; background: linear-gradient(#f5f9ff, #e3ecf8); }
-      .logo { font: bold 26px Georgia, serif; color: #e25d00; text-shadow: 1px 1px 0 #fff; }
-      .logo span { color: #1b5fbf; }
-      form { display: flex; gap: 6px; }
-      input { width: 320px; padding: 4px; border: 1px solid #8e9dad; font: 13px Verdana, sans-serif; }
-      main { max-width: 640px; padding: 12px 20px; }
-      .stats { color: #666; font-size: 11px; }
-      .result { margin: 16px 0; line-height: 1.45; }
-      .result a { font-size: 15px; }
-      .url { color: #0a7d0a; font-size: 12px; }</style></head>
-      <body><header><div class="logo">Notts<span>Search</span></div>
-      <form data-search><input name="q" value="${escapeHtml(query)}"><button>Search</button></form></header>
-      <main><div class="stats">Results 1 - ${matches.length + JOKE_RESULTS.length} for <b>${escapeHtml(query)}</b> (0.${Math.floor(Math.random() * 90 + 10)} seconds on dial-up)</div>
-      ${matches.length ? '' : '<p>Your search did not match many documents. Here are some we found anyway:</p>'}${results}</main></body></html>`;
+    const ours = sites
+      .filter(s => words.some(w => [s.title, s.address, s.description, ...s.aliases].join(' ').toLowerCase().includes(w)))
+      .map(s => ({ title: s.title, address: s.address, description: s.description, ours: true }));
+    const famous = Object.entries(FAMOUS)
+      .filter(([key, [host, , name]]) => words.some(w => key.includes(w) || host.includes(w) || name.toLowerCase().includes(w)))
+      .map(([, [host, year, name]]) => ({ title: `${name} (${year})`, address: host, description: `Visit ${name} as it was in ${year}, courtesy of the Wayback Machine.` }));
+    const web = await webResults(query.trim());
+
+    const addresses = new Set();
+    const results = [...ours, ...famous, ...web].filter(r => !addresses.has(r.address) && addresses.add(r.address));
+    const all = [...results, JOKE_RESULTS[Math.floor(Math.random() * JOKE_RESULTS.length)]];
+
+    const item = r => `
+      <a class="result" data-goto="${escapeHtml(r.address)}">
+        <img src="${r.ours ? GLOBE : escapeHtml(favicon(r.address))}" alt="" onerror="this.src='${GLOBE}'">
+        <span class="text">
+          <span class="title">${escapeHtml(r.title)}</span>
+          <span class="url">http://${escapeHtml(decode(r.address))}${r.address.includes('/') ? '' : '/'}</span>
+          <span class="desc">${escapeHtml(r.description)}</span>
+        </span>
+      </a>`;
+
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(query)} - Notts Search</title><style>
+      body { margin: 0; min-height: 100vh; font: 13px "Segoe UI", Tahoma, sans-serif; color: #1e395b;
+        background: linear-gradient(#d8e7f6, #f4f8fc 220px, #ffffff 420px); }
+      header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 18px; padding: 12px 22px;
+        background: linear-gradient(rgba(255,255,255,.75), rgba(214,231,248,.75)); backdrop-filter: blur(8px);
+        border-bottom: 1px solid #a9c4e2; box-shadow: 0 1px 0 #fff inset, 0 2px 8px rgba(30,57,91,.12); }
+      .logo { font: 26px "Segoe UI Light", "Segoe UI", sans-serif; color: #1e5ab0; letter-spacing: -1px; }
+      .logo b { color: #f07c00; font-weight: 600; }
+      form { display: flex; flex: 1; max-width: 520px; }
+      input { flex: 1; height: 30px; padding: 0 12px; border: 1px solid #8eb4da; border-right: 0; border-radius: 15px 0 0 15px;
+        font: 14px "Segoe UI", sans-serif; background: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,.12); outline: none; }
+      input:focus { border-color: #3c7fb1; box-shadow: inset 0 1px 3px rgba(0,0,0,.12), 0 0 6px #8ec7f2; }
+      button { width: 46px; height: 32px; border: 1px solid #2a5d9a; border-radius: 0 15px 15px 0; cursor: pointer;
+        background: radial-gradient(circle at 50% 20%, #bfe0ff, #5c9fe3 45%, #2466b8 75%, #3d86d6); box-shadow: inset 0 1px 0 rgba(255,255,255,.7); }
+      button svg { width: 15px; height: 15px; fill: #fff; filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
+      main { max-width: 680px; padding: 14px 22px 30px; }
+      .stats { margin-bottom: 8px; color: #5b7392; font-size: 12px; }
+      .result { display: flex; gap: 10px; margin: 6px -10px; padding: 10px; border: 1px solid transparent; border-radius: 4px;
+        text-decoration: none; color: inherit; cursor: pointer; }
+      .result:hover { border-color: #7da2ce; background: linear-gradient(#f2f9fd, #dceffd); box-shadow: inset 0 0 0 1px rgba(255,255,255,.7); }
+      .result img { flex: none; width: 16px; height: 16px; margin-top: 3px; }
+      .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .title { font-size: 16px; color: #0645ad; }
+      .result:hover .title { text-decoration: underline; }
+      .url { overflow: hidden; color: #1e8a3a; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+      .desc { color: #333; line-height: 1.45; }
+      .note { padding: 10px 12px; border: 1px solid #e3c96a; border-radius: 4px; background: linear-gradient(#fffbe6, #fff3c4); }
+    </style></head><body>
+      <header>
+        <div class="logo">Notts<b>Search</b></div>
+        <form data-search><input name="q" value="${escapeHtml(query)}" aria-label="Search">
+          <button aria-label="Search">${ICONS.search}</button></form>
+      </header>
+      <main>
+        <div class="stats">Results 1 - ${all.length} for <b>${escapeHtml(query)}</b> (0.${Math.floor(Math.random() * 90 + 10)} seconds on dial-up)</div>
+        ${web.length || navigator.onLine !== false ? '' : '<p class="note">You seem to be offline, so only our own sites turned up.</p>'}
+        ${all.map(item).join('')}
+      </main>
+    </body></html>`;
   }
 
   // ---------------------------------------------------------------- window
@@ -208,8 +352,11 @@
   const BOOKMARKS = [
     { label: 'NottsNet', address: 'www.nottsnet.co.uk' },
     { label: 'MSN Messenger', address: 'messenger.msn.com' },
+    { label: 'Google', address: 'www.google.com' },
+    { label: 'YouTube', address: 'www.youtube.com' },
+    { label: 'MySpace', address: 'www.myspace.com' },
+    { label: 'BBC News', address: 'news.bbc.co.uk' },
     { label: 'Free Ringtones!!!', address: 'www.ringtones4u.co.uk' },
-    { label: 'HackNotts', address: 'hacknotts.com' },
   ];
 
   const $ = sel => win.el.querySelector(sel);
@@ -240,6 +387,7 @@
     win = { el, tabs: [], active: null, maximized: false, restoreRect: null, taskbarBtn: null, progressTimer: null };
 
     $('.rb-title-icon').src = config.icon || GLOBE;
+    $('.rb-url-icon').addEventListener('error', e => { e.target.src = GLOBE; });
     $('.rb-min').addEventListener('click', minimise);
     $('.rb-max').addEventListener('click', toggleMaximise);
     $('.rb-close').addEventListener('click', close);
@@ -248,7 +396,12 @@
     $('.rb-forward').addEventListener('click', () => step(1));
     $('.rb-reload').addEventListener('click', () => (win.active.loading ? stop() : reload()));
     $('.rb-home').addEventListener('click', () => navigate(config.homepage));
-    $('.rb-urlbar').addEventListener('submit', e => { e.preventDefault(); navigate($('.rb-url').value); $('.rb-url').blur(); });
+    $('.rb-urlbar').addEventListener('submit', e => {
+      e.preventDefault();
+      const typed = $('.rb-url').value;
+      $('.rb-url').blur(); // so the address bar shows the tidied-up address
+      navigate(typed);
+    });
     $('.rb-url').addEventListener('focus', e => e.target.select());
     $('.rb-searchbar').addEventListener('submit', e => {
       e.preventDefault();
@@ -403,12 +556,15 @@
     tab.tabEl.addEventListener('pointerdown', e => { if (!e.target.closest('.rb-tab-close')) selectTab(tab); });
     tab.tabEl.addEventListener('auxclick', e => { if (e.button === 1) closeTab(tab); });
     tab.tabEl.querySelector('.rb-tab-close').addEventListener('click', () => closeTab(tab));
+    tab.tabEl.querySelector('.rb-tab-icon').addEventListener('error', e => { e.target.src = GLOBE; });
     $('.rb-tabstrip').insertBefore(tab.tabEl, $('.rb-newtab'));
 
-    tab.frame = document.createElement('iframe');
-    tab.frame.title = 'Web page';
-    tab.frame.addEventListener('load', () => onFrameLoad(tab));
-    $('.rb-viewport').appendChild(tab.frame);
+    tab.frame = null;
+    makeFrame(tab, {});
+    tab.overlay = document.createElement('div');
+    tab.overlay.className = 'rb-connecting';
+    tab.overlay.hidden = true;
+    $('.rb-viewport').appendChild(tab.overlay);
 
     win.tabs.push(tab);
     selectTab(tab);
@@ -421,8 +577,73 @@
     for (const t of win.tabs) {
       t.tabEl.classList.toggle('rb-active', t === tab);
       t.frame.hidden = t !== tab;
+      t.overlay.hidden = t !== tab || !t.connecting;
     }
     updateChrome();
+  }
+
+  // Each page gets a fresh iframe, with its address set before it goes in the page, so the old
+  // page disappears straight away and we can tell when a slow real website actually arrives.
+  function makeFrame(tab, { src, srcdoc, sandboxed }) {
+    const frame = document.createElement('iframe');
+    frame.title = 'Web page';
+    if (sandboxed) frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+    if (srcdoc != null) frame.srcdoc = srcdoc;
+    else if (src) frame.src = src;
+    frame.hidden = win.active !== tab;
+    frame.addEventListener('load', () => onFrameLoad(tab));
+    if (tab.frame) tab.frame.replaceWith(frame);
+    else $('.rb-viewport').appendChild(frame);
+    tab.frame = frame;
+    return frame;
+  }
+
+  function showConnecting(tab, title, text, actions = []) {
+    tab.connecting = true;
+    tab.overlay.innerHTML = `<div class="rb-connecting-box"><img class="rb-connecting-icon" alt="">
+      <div><b></b><p></p><div class="rb-connecting-actions"></div></div></div>`;
+    tab.overlay.querySelector('img').src = GLOBE;
+    tab.overlay.querySelector('b').textContent = title;
+    tab.overlay.querySelector('p').textContent = text;
+    tab.overlay.querySelector('.rb-connecting-actions').append(...actions.map(([label, action]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.addEventListener('click', action);
+      return button;
+    }));
+    tab.overlay.hidden = tab !== win.active;
+  }
+
+  function hideConnecting(tab) {
+    tab.connecting = false;
+    tab.overlay.hidden = true;
+  }
+
+  // A real website has arrived once its page belongs to another site, and we can no longer look inside it.
+  function watchArrival(tab, loadId, entry) {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (!win || tab.loadId !== loadId) { clearInterval(timer); return; }
+      if (arrived(tab)) {
+        clearInterval(timer);
+        hideConnecting(tab);
+        onFrameLoad(tab);
+      } else if (Date.now() - started > 30000) {
+        clearInterval(timer);
+        showConnecting(tab, 'This is taking ages...', entry.kind === 'web'
+          ? `The Wayback Machine might be busy, or it may not have a copy of ${entry.address}.`
+          : `${entry.address} isn't responding.`, [
+          ['Try again', () => load(tab)],
+          ['Open in a real tab', () => window.open(entry.kind === 'web' ? waybackUrl(entry).replace('if_/', '/') : liveUrl(entry), '_blank', 'noopener')],
+        ]);
+        if (tab === win.active) finishProgress('Timed out');
+      }
+    }, 250);
+  }
+
+  function arrived(tab) {
+    try { return !tab.frame.contentDocument; } catch { return true; }
   }
 
   function closeTab(tab) {
@@ -432,6 +653,7 @@
     win.tabs.splice(i, 1);
     tab.tabEl.remove();
     tab.frame.remove();
+    tab.overlay.remove();
     if (win.active === tab) selectTab(win.tabs[Math.min(i, win.tabs.length - 1)]);
   }
 
@@ -439,18 +661,31 @@
 
   const searchEntry = query => ({ kind: 'search', query, address: 'search.nottsnet.co.uk/?q=' + encodeURIComponent(query) });
 
-  // Turn whatever was typed into a history entry: a known site, a search, or an error page.
+  // Turn whatever was typed into a history entry:
+  //   site    one of ours (a file in this repo)
+  //   web     a real website, shown as it was in the 2000s via the Wayback Machine
+  //   live    a real website that allows being shown live (Wikipedia)
+  //   search  Notts Search results
+  //   missing / error   pages we haven't built, made-up sites
   function entryFor(input) {
     const text = input.trim();
     if (!text) return null;
     const site = findSite(text);
     if (site) return { kind: 'site', address: site.address };
     const search = normalise(text).match(/^search\.nottsnet\.co\.uk\/\?q=(.*)$/);
-    if (search) return searchEntry(decodeURIComponent(search[1]));
-    const parent = findSite(normalise(text).split('/')[0]);
-    if (parent) return { kind: 'missing', address: normalise(text) }; // a page we haven't built on a site we have
-    if (!/\s/.test(text) && /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(normalise(text))) return { kind: 'error', address: normalise(text) };
-    return searchEntry(text);
+    if (search) return searchEntry(decode(search[1]));
+    const shortcut = FAMOUS[text.toLowerCase()];
+    if (shortcut) return { kind: 'web', address: shortcut[0], year: shortcut[1], title: `${shortcut[2]} (${shortcut[1]})` };
+    if (!looksLikeAddress(text)) return searchEntry(text);
+
+    const address = normalise(text);
+    const host = hostOf(address);
+    if (findSite(host)) return { kind: 'missing', address }; // a page we haven't built on a site we have
+    if (FAKE_SITES.has(host)) return { kind: 'error', address };
+    if (LIVE_HOSTS.test(host)) return { kind: 'live', address, title: decode(address.split('/').pop()).replace(/_/g, ' ') };
+    const famous = famousFor(address);
+    const year = famous ? famous[1] : config.year;
+    return { kind: 'web', address, year, title: `${famous ? famous[2] : host} (${year})` };
   }
 
   function navigate(input, tab = win && win.active) {
@@ -480,6 +715,7 @@
     const tab = win.active;
     tab.loadId = (tab.loadId || 0) + 1;
     tab.loading = false;
+    hideConnecting(tab);
     finishProgress('Stopped');
     updateChrome();
   }
@@ -489,16 +725,32 @@
     const loadId = (tab.loadId = (tab.loadId || 0) + 1);
     tab.loading = true;
     tab.expectedSrc = null;
-    if (tab === win.active) startProgress('Opening page http://' + entry.address + '/...');
+    if (tab === win.active) {
+      startProgress(entry.kind === 'web' ? `Dialling up ${entry.address} in ${entry.year} (via the Wayback Machine)...`
+        : entry.kind === 'search' ? `Searching for "${entry.query}"...`
+          : 'Opening page http://' + entry.address + '/...');
+    }
+    if (entry.kind === 'web' || entry.kind === 'live') tab.title = entry.title || entry.address;
     updateChrome();
+    if (entry.kind === 'web' || entry.kind === 'live') {
+      showConnecting(tab, `Connecting to ${decode(entry.address)}...`, entry.kind === 'web'
+        ? `Fetching the ${entry.year} version from the Wayback Machine. Old sites can take a little while.`
+        : 'Fetching the page.');
+    } else {
+      hideConnecting(tab);
+    }
 
     let html = null, src = null;
     const site = entry.kind === 'site' && findSite(entry.address);
+    const external = entry.kind === 'web' || entry.kind === 'live';
     if (site) {
-      src = config.base + site.src;
+      src = config.base + site.src + FRESH;
       if (!(await fileExists(src))) html = missingPage(site);
+    } else if (external) {
+      if (navigator.onLine === false) html = errorPage(entry.address, true);
+      else src = entry.kind === 'web' ? waybackUrl(entry) : liveUrl(entry);
     } else if (entry.kind === 'search') {
-      html = searchPage(entry.query);
+      html = await searchPage(entry.query);
     } else if (entry.kind === 'missing') {
       html = missingPage({ title: 'This page' });
     } else {
@@ -508,21 +760,28 @@
     await sleep(250 + Math.random() * 450); // the authentic dial-up wait
     if (!win || tab.loadId !== loadId) return;
 
-    if (html) {
-      tab.frame.removeAttribute('src');
-      tab.frame.srcdoc = html;
-    } else {
-      tab.frame.removeAttribute('srcdoc');
-      tab.expectedSrc = src;
-      tab.frame.src = src;
+    hideConnecting(tab);
+    tab.expectedSrc = site && !html ? src : null;
+    // Real websites run in a sandbox, so old "break out of frames" scripts can't take over the whole OS.
+    makeFrame(tab, html ? { srcdoc: html } : { src, sandboxed: external });
+    if (external && !html) {
+      showConnecting(tab, `Connecting to ${decode(entry.address)}...`, entry.kind === 'web'
+        ? `Fetching the ${entry.year} version from the Wayback Machine. Old sites can take a little while.`
+        : 'Fetching the page.');
+      watchArrival(tab, loadId, entry);
     }
   }
 
   function onFrameLoad(tab) {
     // Ignore the empty about:blank load every new iframe fires.
     if (!win || !tab.history.length || !(tab.frame.hasAttribute('src') || tab.frame.hasAttribute('srcdoc'))) return;
+    const current = tab.history[tab.index];
+    const external = current.kind === 'web' || current.kind === 'live';
+    if (external && !arrived(tab)) return; // still the blank frame, not the real site yet
     let doc = null;
-    try { doc = tab.frame.contentDocument; } catch { /* cross-origin page */ }
+    if (!external) {
+      try { doc = tab.frame.contentDocument; } catch { /* cross-origin page */ }
+    }
 
     // If the page followed an ordinary link to another of our sites, keep the address bar in step.
     if (doc && tab.expectedSrc) {
@@ -538,8 +797,8 @@
 
     const entry = tab.history[tab.index];
     const site = entry.kind === 'site' && findSite(entry.address);
-    tab.title = (doc && doc.title) || (site && site.title) || entry.address;
-    tab.icon = (site && site.icon) || GLOBE;
+    tab.title = (doc && doc.title) || (site && site.title) || entry.title || entry.address;
+    tab.icon = (site && site.icon) || (entry.kind === 'web' || entry.kind === 'live' ? favicon(entry.address) : GLOBE);
     tab.loading = false;
     if (doc) hookPage(tab, doc);
     announceApp(tab, site && site.app, site && site.title);
@@ -552,9 +811,10 @@
   //   <a href="http://...">             goes through the browser too (usually "Server not found")
   //   <form data-search><input name="q"> searches Notts Search
   function hookPage(tab, doc) {
+    doc.defaultView.retroBrowserHooked = true; // tells sites/site.js it doesn't need to step in
     doc.addEventListener('click', e => {
       const a = e.target.closest && e.target.closest('a');
-      if (!a) return;
+      if (!a || e.defaultPrevented) return;
       const target = a.getAttribute('data-goto') || (/^https?:\/\//i.test(a.getAttribute('href') || '') ? a.getAttribute('href') : null);
       if (!target) return;
       e.preventDefault();
@@ -574,6 +834,21 @@
     });
     doc.addEventListener('pointerdown', focusWindow);
     doc.addEventListener('keydown', onKey);
+  }
+
+  // Pages the browser can't reach into (e.g. when the OS is opened straight from a file, every
+  // page counts as a different site) ask it to navigate by message instead. See sites/site.js.
+  function onPageMessage(e) {
+    const msg = e.data;
+    if (!win || !msg || msg.source !== 'retrobrowser-page') return;
+    const tab = win.tabs.find(t => t.frame.contentWindow === e.source);
+    if (!tab) return;
+    if (msg.action === 'navigate' && msg.address) {
+      if (msg.newTab) newTab(String(msg.address));
+      else navigate(String(msg.address), tab);
+    } else if (msg.action === 'search' && msg.query) {
+      go(tab, searchEntry(String(msg.query)));
+    }
   }
 
   // Tell Clippy (and anything else listening) when an app like MSN is on screen in a tab.
@@ -598,7 +873,9 @@
     }
     $('.rb-title').textContent = `${tab.title} - ${config.name}`;
     $('.rb-url-icon').src = tab.icon;
-    if (document.activeElement !== $('.rb-url')) $('.rb-url').value = entry ? 'http://' + entry.address + (entry.kind === 'search' ? '' : '/') : '';
+    if (document.activeElement !== $('.rb-url')) {
+      $('.rb-url').value = entry ? 'http://' + decode(entry.address) + (entry.kind === 'search' || entry.address.includes('/') ? '' : '/') : '';
+    }
     $('.rb-back').disabled = tab.index <= 0;
     $('.rb-forward').disabled = tab.index >= tab.history.length - 1;
     const reloadBtn = $('.rb-reload');
@@ -641,7 +918,12 @@
   // ------------------------------------------------------------------- API
 
   function init(options = {}) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => init(options));
+      return window.RetroBrowser;
+    }
     Object.assign(config, options);
+    window.addEventListener('message', onPageMessage);
     if (config.launcher) {
       document.querySelectorAll(config.launcher).forEach(el => {
         el.style.cursor = 'pointer';
