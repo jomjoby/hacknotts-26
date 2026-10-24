@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Register</title>
+    <link rel="stylesheet" href="fhome.css">
+    <link rel="icon" type="image/x-icon">
+    <style>
+        .authMessage { min-height: 1.2em; margin: 0.5em 0; font-size: 0.9em; }
+        .authMessage.error { color: #c0392b; }
+        .authMessage.success { color: #27ae60; }
+    </style>
+</head>
+
+<body>
+    <div id="mainBar">
+        <div id="header">
+            <img src="images/forumlogo.png">
+            <nav id="navBar">
+                <ul>
+                    <li><a href="fhome.html">Home</a></li>
+                    <li><a href="forum.html">Forum</a></li>
+                    <li><a href="fabout.html">News</a></li>
+                    <li><a href="flog.html" id="navAuth">Login</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div id="mainBody" class="authForms">
+            <section id="register" class="authCard">
+                <h1>Register</h1>
+                <form id="registerForm">
+                    <div>
+                        <label for="registerUsername">Username:</label>
+                        <input type="text" id="registerUsername" name="registerUsername" required minlength="3" maxlength="30">
+                    </div>
+                    <div>
+                        <label for="registerEmail">Email:</label>
+                        <input type="email" id="registerEmail" name="registerEmail" required>
+                    </div>
+                    <div>
+                        <label for="registerPassword">Password:</label>
+                        <input type="password" id="registerPassword" name="registerPassword" required minlength="8">
+                    </div>
+                    <div>
+                        <label for="confirmPassword">Confirm password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <p id="registerMessage" class="authMessage"></p>
+                    <button type="submit" id="registerBtn">Register</button>
+                </form>
+                <p>Have an account? <a href="#login">Login here</a></p>
+            </section>
+
+            <section id="login" class="authCard">
+                <h1>Login</h1>
+                <form id="loginForm">
+                    <div>
+                        <label for="loginEmail">Email:</label>
+                        <input type="email" id="loginEmail" name="loginEmail" required>
+                    </div>
+                    <div>
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" name="loginPassword" required>
+                    </div>
+                    <p id="loginMessage" class="authMessage"></p>
+                    <button type="submit" id="loginBtn">Login</button>
+                </form>
+                <p>Don't have an account? <a href="#register">Register here</a></p>
+            </section>
+        </div>
+    </div>
+
+    <!-- Supabase client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // 1. Paste your values from Supabase: Project Settings > API
+        //    Use the project URL and the "anon" / publishable key ONLY.
+        //    NEVER put the service_role key in this file.
+        const SUPABASE_URL = 'https://wjfnpfmmlxsjzswurtxf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZm5wZm1tbHhzanpzd3VydHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4Mzk2MzYsImV4cCI6MjEwODQxNTYzNn0.JCsaTfjvhFWBuImv03vbIKwT5pVqIUr7lyKRZqVJhYo';
+
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const registerForm = document.getElementById('registerForm');
+        const loginForm = document.getElementById('loginForm');
+        const registerMessage = document.getElementById('registerMessage');
+        const loginMessage = document.getElementById('loginMessage');
+        const navAuth = document.getElementById('navAuth');
+
+        function showMessage(el, text, type) {
+            el.textContent = text;
+            el.className = 'authMessage ' + type;
+        }
+
+        // ---------- Register ----------
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (password !== confirm) {
+                showMessage(registerMessage, 'Passwords do not match.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            showMessage(registerMessage, 'Creating account...', '');
+
+            const { data, error } = await sb.auth.signUp({
+                email,
+                password,
+                options: { data: { username } } // saved as user metadata (used by the profiles trigger)
+            });
+
+            btn.disabled = false;
+
+            if (error) {
+                showMessage(registerMessage, error.message, 'error');
+                return;
+            }
+
+            if (data.session) {
+                // Email confirmation is turned off: user is logged in straight away
+                window.location.href = 'forum.html';
+            } else {
+                showMessage(registerMessage, 'Account created! Check your email to confirm it, then log in.', 'success');
+                registerForm.reset();
+            }
+        });
+
+        // ---------- Login ----------
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            showMessage(loginMessage, 'Logging in...', '');
+
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+
+            btn.disabled = false;
+
+            if (error) {
+                showMessage(loginMessage, error.message, 'error');
+                return;
+            }
+
+            window.location.href = 'forum.html';
+        });
+
+        // ---------- Show Login / Logout in the nav ----------
+        async function updateNav() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                navAuth.textContent = 'Logout';
+                navAuth.href = '#';
+                navAuth.onclick = async (e) => {
+                    e.preventDefault();
+                    await sb.auth.signOut();
+                    window.location.href = 'fhome.html';
+                };
+            }
+        }
+        updateNav();
+
+
+        (async () => {
+            const { error } = await sb.from('profiles').select('id').limit(1);
+            console.log(error ? 'Connection FAILED: ' + error.message : 'Connected to Supabase OK');
+        })();
+    </script>
+</body>
