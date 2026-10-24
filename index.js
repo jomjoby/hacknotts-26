@@ -254,11 +254,41 @@ function loadScript(src) {
     });
 }
 
+
+
 // Desktop icons snap to a grid, like Windows: click an icon to select it, drag it
 // anywhere and it snaps into the nearest cell (swapping with any icon already there).
 // Positions are remembered in this browser. The grid's size and spacing come from
 // .desktop-space in styles.css. Give an icon data-id="..." to keep its saved spot
 // even if icons are reordered.
+
+
+let deletedItems = JSON.parse(localStorage.getItem("deletedItems")) || [];
+
+function moveToBin(icon) {
+    const id = icon.dataset.id;
+
+    if (id === "recycle-bin") return;
+
+    if (!deletedItems.includes(id)) {
+        deletedItems.push(id);
+        localStorage.setItem("deletedItems", JSON.stringify(deletedItems));
+    }
+
+    icon.style.display = "none";
+}
+
+function restoreFromBin(id) {
+    deletedItems = deletedItems.filter(item => item !== id);
+    localStorage.setItem("deletedItems", JSON.stringify(deletedItems));
+
+    const icon = document.querySelector(`.desktop-icon[data-id="${id}"]`);
+
+    if (icon) {
+        icon.style.display = "";
+    }
+}
+
 (function () {
   'use strict';
 
