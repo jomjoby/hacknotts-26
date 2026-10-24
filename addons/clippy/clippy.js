@@ -14,8 +14,8 @@
  *    browser's built-in speech.
  *
  * Usage (at the end of <body>):
- *   <link rel="stylesheet" href="clippy/clippy.css">
- *   <script src="clippy/clippy.js"></script>
+ *   <link rel="stylesheet" href="addons/clippy/clippy.css">
+ *   <script src="addons/clippy/clippy.js"></script>
  *   <script>Clippy.init();</script>
  */
 (function () {

@@ -1,6 +1,6 @@
 // <purble-place> custom element – drop-in usage with no JavaScript glue:
 //
-//   <script type="module" src="purble-place/src/element.js"></script>
+//   <script type="module" src="addons/purble-place/src/element.js"></script>
 //   <purble-place style="width:800px;height:622px" game="purble-pairs" level="beginner"></purble-place>
 //
 // Attributes: game, level, muted, seed, no-menubar.

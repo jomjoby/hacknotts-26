@@ -1,7 +1,7 @@
 /*
  * Optional helper for pages shown in the retro browser. Include it in a site's page:
  *
- *   <script src="../browser/sites/site.js"></script>   (path relative to your page)
+ *   <script src="../browser/sites/site.js"></script>   (path relative to your page, e.g. from addons/forum/)
  *
  * Normally the browser makes <a data-goto="..."> links and <form data-search> work by
  * itself. When it can't reach into the page (e.g. the OS was opened straight from a

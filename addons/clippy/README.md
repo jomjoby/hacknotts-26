@@ -100,4 +100,4 @@ The scripts need to be served over http rather than opened as a file:
 python3 -m http.server 8026
 ```
 
-Then open http://localhost:8026/clippy/demo.html
+Then open http://localhost:8026/addons/clippy/demo.html

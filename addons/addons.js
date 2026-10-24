@@ -1,5 +1,7 @@
 /*
- * Loads our add-ons into the OS: Clippy, the retro browser, the Control Panel (settings/) and Paint (paint/).
+ * Loads our add-ons into the OS, which all live in this addons/ folder: Clippy, the retro browser,
+ * the Control Panel (settings/), Paint and Purble Place (opened by index.js). FunForum (forum/) is a
+ * website shown inside the browser.
  * The OS only needs this one line in index.html:
  *
  *   <script src="addons/addons.js" defer></script>
@@ -32,12 +34,12 @@
     });
   }
 
-  addStyle('clippy/clippy.css');
-  addStyle('browser/browser.css');
-  addStyle('settings/settings.css');
-  addStyle('paint/paint.css');
+  addStyle('addons/clippy/clippy.css');
+  addStyle('addons/browser/browser.css');
+  addStyle('addons/settings/settings.css');
+  addStyle('addons/paint/paint.css');
 
-  Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js'), addScript('settings/settings.js'), addScript('paint/paint.js')])
+  Promise.all([addScript('addons/clippy/clippy.js'), addScript('addons/browser/browser.js'), addScript('addons/settings/settings.js'), addScript('addons/paint/paint.js')])
     .then(() => {
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.

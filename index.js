@@ -19,7 +19,7 @@ function openApp(app) {
 
     switch (app) {
         case "firefox":
-            // The retro browser (browser/), loaded by addons/addons.js.
+            // The retro browser (addons/browser/), loaded by addons/addons.js.
             if (window.RetroBrowser) RetroBrowser.open();
             break;
 
@@ -32,12 +32,12 @@ function openApp(app) {
             break;
 
         case "paint":
-            // Paint (paint/), loaded by addons/addons.js.
+            // Paint (addons/paint/), loaded by addons/addons.js.
             if (window.PaintApp) PaintApp.open();
             break;
 
         case "control-panel":
-            // The Control Panel (settings/), loaded by addons/addons.js.
+            // The Control Panel (addons/settings/), loaded by addons/addons.js.
             if (window.SettingsApp) SettingsApp.open();
             break;
     }
@@ -196,7 +196,7 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
 }
 
 
-// ---- Purble Place (purble-place/) ---------------------------------------------
+// ---- Purble Place (addons/purble-place/) --------------------------------------
 // The game is built from JavaScript modules. Some browsers (Chrome) won't load modules from a
 // page opened as a file, so then we use addons/purble-place-bundle.js, the same game as one plain
 // script (rebuild it with addons/build-purble-bundle.sh after changing the game).
@@ -237,7 +237,7 @@ async function openPurblePlace() {
 
     let mount;
     try {
-        ({ mount } = await import('./purble-place/src/index.js'));
+        ({ mount } = await import('./addons/purble-place/src/index.js'));
     } catch (err) {
         try {
             await loadScript('addons/purble-place-bundle.js');

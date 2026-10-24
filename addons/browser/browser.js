@@ -2,13 +2,13 @@
  * RetroBrowser: a Firefox-on-Windows-7 style web browser for the HackNotts 26 OS.
  *
  * "Websites" are HTML files in this repo, registered with an address
- * (e.g. www.funforum.co.uk -> fhome.html) and shown in iframes, one per tab.
+ * (e.g. www.funforum.co.uk -> addons/forum/fhome.html) and shown in iframes, one per tab.
  * Unknown addresses get a retro "Server not found" page; anything that isn't
  * an address goes to a fake search engine.
  *
  * Usage (at the end of <body>):
- *   <link rel="stylesheet" href="browser/browser.css">
- *   <script src="browser/browser.js"></script>
+ *   <link rel="stylesheet" href="addons/browser/browser.css">
+ *   <script src="addons/browser/browser.js"></script>
  *   <script>RetroBrowser.init({ launcher: '.desktop-icon', icon: 'images/Mozilla_Firefox_logo_2004.webp' });</script>
  */
 (function () {
@@ -92,7 +92,7 @@
     address: 'www.nottsnet.co.uk',
     aliases: ['nottsnet', 'nottsnet.co.uk', 'home', 'about:home'],
     title: 'NottsNet - Your Gateway to the Web',
-    src: 'browser/sites/home.html',
+    src: 'addons/browser/sites/home.html',
     description: 'The finest portal on the information superhighway. News, chat, search and more.',
   });
 
@@ -102,12 +102,12 @@
     address: 'www.youtube.com',
     aliases: ['youtube', 'youtube.com', 'www.youtube.co.uk', 'youtube.co.uk', 'you tube'],
     title: 'YouTube - Broadcast Yourself',
-    src: 'browser/sites/youtube.html',
+    src: 'addons/browser/sites/youtube.html',
     description: 'Watch the classics: Evolution of Dance, Charlie bit my finger, Keyboard Cat and more. Or paste any YouTube link.',
     paths: true,
   });
 
-  // FunForum: the team's community forum and chat (fhome.html etc. at the repo root). It took
+  // FunForum: the team's community forum and chat (addons/forum/). It took
   // over from MSN Messenger, so the old MSN addresses lead here too. Each page gets its own
   // address so the address bar follows the forum's own links.
   const FORUM_DESCRIPTION = 'The friendliest community chat on the web. General, Games, Movies & TV and Sports channels.';
@@ -116,13 +116,13 @@
     aliases: ['funforum', 'fun forum', 'forum', 'funforum.co.uk', 'www.funforum.com', 'funforum.com',
       'msn', 'msn.com', 'www.msn.com', 'messenger', 'msn messenger', 'messenger.msn.com', 'chat'],
     title: 'FunForum',
-    src: 'fhome.html',
+    src: 'addons/forum/fhome.html',
     description: FORUM_DESCRIPTION,
     app: 'forum',
   });
-  registerSite({ address: 'www.funforum.co.uk/forum', title: 'FunForum - Forum', src: 'forum.html', description: FORUM_DESCRIPTION, app: 'forum' });
-  registerSite({ address: 'www.funforum.co.uk/news', title: 'FunForum - News', src: 'fabout.html', description: FORUM_DESCRIPTION, app: 'forum' });
-  registerSite({ address: 'www.funforum.co.uk/login', title: 'FunForum - Login', src: 'flog.html', description: FORUM_DESCRIPTION, app: 'forum' });
+  registerSite({ address: 'www.funforum.co.uk/forum', title: 'FunForum - Forum', src: 'addons/forum/forum.html', description: FORUM_DESCRIPTION, app: 'forum' });
+  registerSite({ address: 'www.funforum.co.uk/news', title: 'FunForum - News', src: 'addons/forum/fabout.html', description: FORUM_DESCRIPTION, app: 'forum' });
+  registerSite({ address: 'www.funforum.co.uk/login', title: 'FunForum - Login', src: 'addons/forum/flog.html', description: FORUM_DESCRIPTION, app: 'forum' });
 
   // -------------------------------------------------------------- helpers
 

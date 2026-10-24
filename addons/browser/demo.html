@@ -34,7 +34,7 @@
   </div>
 
   <div class="icon" id="browser-icon">
-    <img src="../images/Mozilla_Firefox_logo_2004.webp" alt="">
+    <img src="../../images/Mozilla_Firefox_logo_2004.webp" alt="">
     <div>Mozilla Firefox</div>
   </div>
 
@@ -44,13 +44,13 @@
   <script>Clippy.init({ bottom: 60 });</script>
   <script src="browser.js"></script>
   <script>
-    // base: '../' because this page lives in browser/, while site paths are written from the OS root.
+    // base: '../../' because this page lives in addons/browser/, while site paths are written from the OS root.
     RetroBrowser.init({
       launcher: '#browser-icon',
       taskbar: '.taskbar',
-      icon: '../images/Mozilla_Firefox_logo_2004.webp',
+      icon: '../../images/Mozilla_Firefox_logo_2004.webp',
       bottom: 44,
-      base: '../',
+      base: '../../',
     });
   </script>
 </body>
