@@ -552,9 +552,10 @@
   //   <a href="http://...">             goes through the browser too (usually "Server not found")
   //   <form data-search><input name="q"> searches Notts Search
   function hookPage(tab, doc) {
+    doc.defaultView.retroBrowserHooked = true; // tells sites/site.js it doesn't need to step in
     doc.addEventListener('click', e => {
       const a = e.target.closest && e.target.closest('a');
-      if (!a) return;
+      if (!a || e.defaultPrevented) return;
       const target = a.getAttribute('data-goto') || (/^https?:\/\//i.test(a.getAttribute('href') || '') ? a.getAttribute('href') : null);
       if (!target) return;
       e.preventDefault();
@@ -574,6 +575,21 @@
     });
     doc.addEventListener('pointerdown', focusWindow);
     doc.addEventListener('keydown', onKey);
+  }
+
+  // Pages the browser can't reach into (e.g. when the OS is opened straight from a file, every
+  // page counts as a different site) ask it to navigate by message instead. See sites/site.js.
+  function onPageMessage(e) {
+    const msg = e.data;
+    if (!win || !msg || msg.source !== 'retrobrowser-page') return;
+    const tab = win.tabs.find(t => t.frame.contentWindow === e.source);
+    if (!tab) return;
+    if (msg.action === 'navigate' && msg.address) {
+      if (msg.newTab) newTab(String(msg.address));
+      else navigate(String(msg.address), tab);
+    } else if (msg.action === 'search' && msg.query) {
+      go(tab, searchEntry(String(msg.query)));
+    }
   }
 
   // Tell Clippy (and anything else listening) when an app like MSN is on screen in a tab.
@@ -641,7 +657,12 @@
   // ------------------------------------------------------------------- API
 
   function init(options = {}) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => init(options));
+      return window.RetroBrowser;
+    }
     Object.assign(config, options);
+    window.addEventListener('message', onPageMessage);
     if (config.launcher) {
       document.querySelectorAll(config.launcher).forEach(el => {
         el.style.cursor = 'pointer';

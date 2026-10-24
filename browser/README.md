@@ -4,31 +4,19 @@ A Firefox-on-Windows-7 style web browser for the OS: Aero glass window, tabs, ba
 
 The "web" is made of HTML files in this repo. Each one is registered with an address, so typing `msn.com` opens `msn/index.html`. Unknown addresses get a retro "Server not found" page, and anything that isn't an address goes to Notts Search.
 
-## Trying it
+## Adding it to the OS
 
-The browser isn't wired into the OS's `index.html` (that's the OS owner's file). To test it on its own, run a local server from the repo root and open the test desktop:
-
-```bash
-python3 -m http.server 8026
-```
-
-Then go to http://localhost:8026/browser/demo.html and double-click the icon.
-
-## For the OS: adding it to `index.html`
-
-At the end of `<body>`:
+One line in the `<head>` of `index.html` loads both the browser and Clippy:
 
 ```html
-<link rel="stylesheet" href="browser/browser.css">
-<script src="browser/browser.js"></script>
-<script>
-  RetroBrowser.init({
-    launcher: '.desktop-icon',                       // double-click this to open the browser
-    taskbar: '.taskbar',                             // optional: add a button here while it's open
-    icon: 'images/Mozilla_Firefox_logo_2004.webp',
-  });
-</script>
+<script src="addons/addons.js" defer></script>
 ```
+
+All the settings live in [`addons/addons.js`](../addons/addons.js), so changing them never touches the OS's files. To test the browser on its own, open `browser/demo.html` instead (through a local server, e.g. `python3 -m http.server 8026` then http://localhost:8026/browser/demo.html).
+
+## Settings
+
+`addons/addons.js` calls `RetroBrowser.init({...})` with:
 
 | Option     | Default              | Meaning |
 | ---------- | -------------------- | ------- |
@@ -50,7 +38,7 @@ The window has `data-app-window="browser"`, so Clippy notices it, and Clippy can
 2. It opens in a browser tab at `http://messenger.msn.com/` (also reachable by typing `msn`, `msn.com` or `messenger`, the MSN bookmark, or asking Clippy to "open msn").
 3. It runs inside an iframe that fills the browser window, so make the layout fill its window (e.g. `height: 100vh`) and cope with being resized.
 4. Use paths relative to the page (`msn.css`, not `/msn/msn.css`).
-5. To link to another of our sites, use `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`.
+5. To link to another of our sites, use `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`. Also include `<script src="../browser/sites/site.js"></script>` so those links still work when the OS is opened straight from the file instead of a local server.
 6. Clippy can suggest cringey 2000s personal messages. To receive them:
    ```js
    parent.addEventListener('clippy:msn-status', e => setPersonalMessage(e.detail.text));
