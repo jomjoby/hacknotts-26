@@ -31,6 +31,11 @@ function openApp(app) {
             openPurblePlace();
             break;
 
+        case "paint":
+            // Paint (paint/), loaded by addons/addons.js.
+            if (window.PaintApp) PaintApp.open();
+            break;
+
         case "control-panel":
             // The Control Panel (settings/), loaded by addons/addons.js.
             if (window.SettingsApp) SettingsApp.open();

@@ -1,5 +1,5 @@
 /*
- * Loads our add-ons into the OS: Clippy, the retro browser and the Control Panel (settings/).
+ * Loads our add-ons into the OS: Clippy, the retro browser, the Control Panel (settings/) and Paint (paint/).
  * The OS only needs this one line in index.html:
  *
  *   <script src="addons/addons.js" defer></script>
@@ -35,12 +35,23 @@
   addStyle('clippy/clippy.css');
   addStyle('browser/browser.css');
   addStyle('settings/settings.css');
+  addStyle('paint/paint.css');
 
-  Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js'), addScript('settings/settings.js')])
+  Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js'), addScript('settings/settings.js'), addScript('paint/paint.js')])
     .then(() => {
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.
       window.Clippy.init({ bottom: 80 });
+      window.Clippy.registerApp({
+        id: 'paint',
+        name: 'Paint',
+        aliases: ['paint', 'ms paint', 'mspaint', 'microsoft paint', 'drawing', 'draw'],
+        tips: [
+          { text: "It looks like you're drawing! Tip: right-click paints with Color 2." },
+          { text: 'Tip: the fill bucket fills everything that is exactly the same colour. Close your shapes first!' },
+          { text: 'Masterpiece in progress? Ctrl+Z undoes, and the Paint menu saves it as a PNG.' },
+        ],
+      });
       window.Clippy.registerApp({
         id: 'control-panel',
         name: 'Control Panel',
