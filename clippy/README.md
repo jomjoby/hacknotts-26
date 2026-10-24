@@ -1,0 +1,79 @@
+# Clippy
+
+An offline desktop assistant for our Windows 7-style OS. No AI API or keys: it understands requests with its own small intent classifier (Naive Bayes, trained on example phrases in `clippy.js`), watches what you do on the desktop, and can do small tasks for you.
+
+`demo.html` is a throwaway test desktop for trying Clippy on its own. It is **not** the real OS.
+
+## Adding Clippy to the OS
+
+At the end of `<body>`:
+
+```html
+<link rel="stylesheet" href="clippy/clippy.css">
+<script src="clippy/clippy.js"></script>
+<script>Clippy.init({ bottom: 56 }); // px above the screen bottom, so it sits over the taskbar</script>
+```
+
+## How Clippy sees what's open
+
+Pick either option (or both):
+
+1. **Zero effort:** give each app window the attribute `data-app-window="<id>"`. Clippy notices when one appears, disappears or is hidden.
+   ```html
+   <div class="window" data-app-window="msn">...</div>
+   ```
+2. **Events:** fire these on `window` when things happen:
+   ```js
+   window.dispatchEvent(new CustomEvent('os:app-opened', { detail: { id: 'msn', title: 'MSN Messenger' } }));
+   window.dispatchEvent(new CustomEvent('os:app-closed', { detail: { id: 'msn' } }));
+   window.dispatchEvent(new CustomEvent('os:app-focused', { detail: { id: 'msn' } }));
+   ```
+
+Built-in app ids: `msn`, `notepad`, `browser`, `computer`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
+
+```js
+Clippy.registerApp({
+  id: 'paint', name: 'Paint', aliases: ['paint', 'drawing'],
+  tips: [{ text: 'It looks like you\'re drawing! Want a tip?', choices: [{ label: 'Yes', cmd: 'help' }] }],
+});
+```
+
+## How Clippy does things
+
+Expose these on `window.OS` and Clippy will call them. If they're missing, Clippy fires the event instead.
+
+| Clippy wants to...  | Calls                    | Or fires event                      |
+| ------------------- | ------------------------ | ----------------------------------- |
+| Open an app         | `OS.openApp(id)`         | `clippy:open-app` `{ id }`          |
+| Close an app        | `OS.closeApp(id)`        | `clippy:close-app` `{ id }`         |
+| Change wallpaper    | `OS.setWallpaper()`      | `clippy:wallpaper`                  |
+| Set an MSN status   | n/a                      | `clippy:msn-status` `{ text }`      |
+
+For "write a letter", Clippy types into the focused text box, or into a `textarea` inside `[data-app-window="notepad"]`.
+
+## Things to try
+
+- "Open MSN and tell me a joke"
+- "What's 12 x (7 + 3)?"
+- "Remind me in 5 minutes to drink my water"
+- "Give me an MSN status" (then "Use it")
+- "Write a letter", or type "Dear Sam," in any text box
+- "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
+- "What's open?", "Close everything", "Change the wallpaper"
+- "Be quiet" / "Talk more" / "Go away" (press **F1** to bring Clippy back)
+
+It also notices you opening apps, typing in caps, rage-clicking and going idle (it falls asleep), and its eyes follow your mouse.
+
+## Other JS API
+
+`Clippy.say(text)`, `Clippy.ask(text)`, `Clippy.open()`, `Clippy.show()`, `Clippy.hide()`, `Clippy.understand(text)` (debug: shows what Clippy thinks a sentence means).
+
+## Running the test desktop
+
+The scripts need to be served over http rather than opened as a file:
+
+```bash
+python3 -m http.server 8026
+```
+
+Then open http://localhost:8026/clippy/demo.html
