@@ -23,7 +23,45 @@
             </nav>
         </div>
         <div id="mainBody">
-            hi, this is the home, please come in.
+            <section class="forumSection">
+                <h1>Welcome to FunForum!</h1>
+                <p>The friendliest corner of the information superhighway. Grab a seat, pick a section and join the chat about games, films, sport and everything in between.</p>
+                <p id="forumStatus" class="forumStatus">Checking login status...</p>
+            </section>
+
+            <section class="forumSection">
+                <h2>Latest News</h2>
+                <div id="newsList"><p class="emptyNote">Loading the news...</p></div>
+                <p><a href="fabout.html">All the news &raquo;</a></p>
+            </section>
+
+            <section class="forumSection">
+                <h2>Forum Sections</h2>
+                <div class="sectionGrid" id="sectionGrid"></div>
+            </section>
+
+            <section class="forumSection">
+                <h2>Latest Threads</h2>
+                <ul class="recentList" id="recentList"><li class="emptyNote">Loading...</li></ul>
+            </section>
+
+            <section class="forumSection">
+                <h2>FunForum Stats</h2>
+                <div class="statsRow">
+                    <div><b id="statMembers">-</b>members</div>
+                    <div><b id="statThreads">-</b>threads</div>
+                    <div><b id="statPosts">-</b>posts</div>
+                </div>
+            </section>
+
+            <section class="forumSection">
+                <h2>New here?</h2>
+                <ol class="forumRules">
+                    <li><a href="flog.html#register">Register</a> for a free account (it takes ten seconds, no dial-up required).</li>
+                    <li>Pick a section on the <a href="forum.html">Forum</a> and start a thread, or reply to one.</li>
+                    <li>Got big news? Start your thread title with <b>[News]</b> and it goes on the front page.</li>
+                </ol>
+            </section>
         </div>
     </div>
 
@@ -34,14 +72,32 @@
 
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Same sections as the forum page
+        const CHANNELS = {
+            'general':   { title: 'General Chat',   desc: 'Talk about anything and everything.' },
+            'games':     { title: 'Game Chat',      desc: 'Video games, board games, tips and recommendations.' },
+            'movies-tv': { title: 'Movie & TV Chat', desc: 'Films, series, trailers and theories. Mark spoilers!' },
+            'sports':    { title: 'Sports Chat',    desc: 'Matches, results, transfers and predictions.' }
+        };
+
+        // A thread whose title starts with [News] or News: is news
+        const NEWS_PATTERN = /^\s*(\[news\]|news:)\s*/i;
+
         const navAuth = document.getElementById('navAuth');
+        const forumStatus = document.getElementById('forumStatus');
+
         async function updateLoginState() {
             const { data: { session } } = await sb.auth.getSession();
-            if (!session) return; // not logged in: leave the normal "Login" link
+            if (!session) {
+                // not logged in: leave the normal "Login" link
+                forumStatus.innerHTML = 'You are not logged in. <a href="flog.html">Log in or register</a> to join the chat.';
+                return;
+            }
 
             // Look up the username, falling back to the one saved at registration
             const { data } = await sb.from('profiles').select('username').eq('id', session.user.id).single();
             const username = (data && data.username) || session.user.user_metadata.username || 'friend';
+            forumStatus.textContent = 'Welcome back, ' + username + '!';
 
             navAuth.textContent = 'Logout';
             navAuth.href = '#';
@@ -51,7 +107,116 @@
                 window.location.href = 'fhome.html';
             };
         }
+
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        // A link to a thread on the forum page
+        function threadLink(thread, text) {
+            const a = document.createElement('a');
+            a.href = 'forum.html#' + thread.channel + '/' + thread.id;
+            a.textContent = text; // textContent (not innerHTML) so nobody can inject HTML
+            return a;
+        }
+
+        // ---------- Latest news: the newest threads titled [News] ----------
+        async function loadNews() {
+            const newsList = document.getElementById('newsList');
+            const { data, error } = await sb.from('threads')
+                .select('id, title, channel, created_at, profiles(username), messages(content, is_spoiler, created_at)')
+                .order('created_at', { ascending: false })
+                .order('created_at', { referencedTable: 'messages', ascending: true })
+                .limit(1, { referencedTable: 'messages' })
+                .limit(50);
+
+            newsList.replaceChildren();
+            const news = (data || []).filter(t => NEWS_PATTERN.test(t.title)).slice(0, 3);
+            if (error || !news.length) {
+                const p = document.createElement('p');
+                p.className = 'emptyNote';
+                p.textContent = error ? 'Could not load the news.' : 'No news yet. Start a thread called "[News] ..." to make some!';
+                newsList.appendChild(p);
+                return;
+            }
+
+            news.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'newsItem';
+
+                const h3 = document.createElement('h3');
+                h3.appendChild(threadLink(t, t.title.replace(NEWS_PATTERN, '')));
+
+                const meta = document.createElement('p');
+                meta.className = 'threadMeta';
+                meta.textContent = formatDate(t.created_at) + ' in ' + CHANNELS[t.channel].title + ', by ' + (t.profiles ? t.profiles.username : 'Unknown');
+
+                const first = t.messages[0];
+                const body = document.createElement('p');
+                body.textContent = !first ? '' : first.is_spoiler ? 'Contains spoilers: read it on the forum.' : first.content;
+
+                item.append(h3, meta, body);
+                newsList.appendChild(item);
+            });
+        }
+
+        // ---------- Sections, latest threads and stats ----------
+        async function loadForumOverview() {
+            const [threads, members, posts] = await Promise.all([
+                sb.from('threads').select('id, title, channel, created_at, profiles(username)').order('created_at', { ascending: false }),
+                sb.from('profiles').select('id', { count: 'exact', head: true }),
+                sb.from('messages').select('id', { count: 'exact', head: true })
+            ]);
+            const all = threads.data || [];
+
+            // One card per section: how many threads, and the newest one
+            const grid = document.getElementById('sectionGrid');
+            grid.replaceChildren();
+            Object.entries(CHANNELS).forEach(([key, channel]) => {
+                const inSection = all.filter(t => t.channel === key);
+                const card = document.createElement('a');
+                card.className = 'sectionCard';
+                card.href = 'forum.html#' + key;
+
+                const title = document.createElement('b');
+                title.textContent = channel.title;
+                const desc = document.createElement('span');
+                desc.textContent = channel.desc;
+                const stats = document.createElement('span');
+                stats.className = 'sectionStats';
+                stats.textContent = (inSection.length === 1 ? '1 thread' : inSection.length + ' threads') +
+                    (inSection[0] ? ', newest: ' + inSection[0].title.replace(NEWS_PATTERN, '') : '');
+
+                card.append(title, desc, stats);
+                grid.appendChild(card);
+            });
+
+            // The newest threads from every section
+            const recent = document.getElementById('recentList');
+            recent.replaceChildren();
+            all.slice(0, 6).forEach(t => {
+                const li = document.createElement('li');
+                const meta = document.createElement('span');
+                meta.className = 'threadMeta';
+                meta.textContent = ' in ' + CHANNELS[t.channel].title + ', by ' + (t.profiles ? t.profiles.username : 'Unknown') + ', ' + formatDate(t.created_at);
+                li.append(threadLink(t, t.title.replace(NEWS_PATTERN, '')), meta);
+                recent.appendChild(li);
+            });
+            if (!all.length) {
+                const li = document.createElement('li');
+                li.className = 'emptyNote';
+                li.textContent = 'No threads yet. Be the first!';
+                recent.appendChild(li);
+            }
+
+            document.getElementById('statMembers').textContent = members.count ?? '-';
+            document.getElementById('statThreads').textContent = threads.data ? all.length : '-';
+            document.getElementById('statPosts').textContent = posts.count ?? '-';
+        }
+
         updateLoginState();
+        loadNews();
+        loadForumOverview();
     </script>
 </body>
 </html>
