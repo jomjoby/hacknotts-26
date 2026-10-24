@@ -257,6 +257,26 @@ function loadScript(src) {
 // .desktop-space in styles.css. Give an icon data-id="..." to keep its saved spot
 // even if icons are reordered.
 
+function updateClock() {
+    const now = new Date();
+
+    const time = now.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+    const date = now.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+
+    document.getElementById("clock-time").textContent = time;
+    document.getElementById("clock-date").textContent = date;
+}
+
+updateClock();
+setInterval(updateClock, 1000);
 
 let deletedItems = JSON.parse(localStorage.getItem("deletedItems")) || [];
 
