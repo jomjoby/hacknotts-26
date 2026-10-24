@@ -27,6 +27,11 @@ function openApp(app) {
         case "purble-place":
             openPurblePlace();
             break;
+
+        case "control-panel":
+            // The Control Panel (settings/), loaded by addons/addons.js.
+            if (window.SettingsApp) SettingsApp.open();
+            break;
     }
 }
 

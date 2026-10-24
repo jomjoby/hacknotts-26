@@ -1,5 +1,5 @@
 /*
- * Loads our add-ons into the OS: Clippy and the retro browser.
+ * Loads our add-ons into the OS: Clippy, the retro browser and the Control Panel (settings/).
  * The OS only needs this one line in index.html:
  *
  *   <script src="addons/addons.js" defer></script>
@@ -34,12 +34,22 @@
 
   addStyle('clippy/clippy.css');
   addStyle('browser/browser.css');
+  addStyle('settings/settings.css');
 
-  Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js')])
+  Promise.all([addScript('clippy/clippy.js'), addScript('browser/browser.js'), addScript('settings/settings.js')])
     .then(() => {
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.
       window.Clippy.init({ bottom: 80 });
+      window.Clippy.registerApp({
+        id: 'control-panel',
+        name: 'Control Panel',
+        aliases: ['control panel', 'control-panel', 'settings app', 'preferences', 'personalisation', 'personalization'],
+        tips: [
+          { text: 'It looks like you are changing settings! Try a new window colour under Personalization.' },
+          { text: 'Tip: the year of the web, under Internet Options, changes which year real websites come from.' },
+        ],
+      });
       window.Clippy.registerApp({
         id: 'purble-place',
         name: 'Purble Place',
@@ -56,6 +66,7 @@
         bottom: 80,
         base: root,
       });
+      window.SettingsApp.applySaved();
     })
     .catch(err => console.error('Add-ons failed to load:', err));
 })();

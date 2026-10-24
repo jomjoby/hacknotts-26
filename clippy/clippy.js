@@ -1837,6 +1837,10 @@
     setVoice,
     setBrain: brain => Promise.resolve(setBrain(brain)).then(say),
     get brain() { return state.brain; },
+    // Current settings, for the Control Panel.
+    get settings() {
+      return { visible: !state.hidden, tips: state.chattiness !== 'quiet', voice: state.voice, brain: state.brain };
+    },
     get openApps() { return [...openApps.keys()]; },
     // For debugging: what Clippy thinks a sentence means.
     understand: text => classifier.classify(text).slice(0, 3),

@@ -1,0 +1,198 @@
+/* Control Panel (settings.js), styled after the Windows 7 Control Panel. Classes start with cp-. */
+
+/* ---- Window colour: tints the glass of windows, the taskbar and the start menu ---- */
+
+body[data-aero] .os-window,
+body[data-aero] .rb-window {
+  background: linear-gradient(to bottom, rgba(var(--glass-tint), var(--glass-opacity)), rgba(var(--glass-tint-dark), var(--glass-opacity)));
+}
+
+body[data-aero] .taskbar {
+  background: linear-gradient(to bottom, rgba(var(--glass-tint), calc(var(--glass-opacity) * 0.5)), rgba(var(--glass-tint-dark), calc(var(--glass-opacity) * 0.85)));
+}
+
+body[data-aero] .start-menu {
+  background: linear-gradient(to bottom, rgba(var(--glass-tint), calc(var(--glass-opacity) + 0.1)), rgba(var(--glass-tint-dark), calc(var(--glass-opacity) + 0.1)));
+}
+
+body[data-aero-solid] .os-window,
+body[data-aero-solid] .rb-window,
+body[data-aero-solid] .taskbar,
+body[data-aero-solid] .start-menu {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ---- The Control Panel window ---- */
+
+.cp-root {
+  display: flex;
+  flex-direction: column;
+  font: 12px "Segoe UI", Tahoma, sans-serif;
+  color: #1e1e1e;
+}
+
+.cp-addressbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: linear-gradient(#f4f8fc, #dde8f4);
+  border-bottom: 1px solid #b6c6d8;
+}
+
+.cp-nav {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #2a5d9a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 25%, #bfe0ff, #5c9fe3 45%, #2466b8 75%, #3d86d6);
+  color: #fff;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.cp-nav:disabled { border-color: #9aa8b6; background: linear-gradient(#f2f5f8, #cfd8e1); color: #9aa8b6; cursor: default; }
+
+.cp-crumbs {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  margin-left: 4px;
+  padding: 0 8px;
+  border: 1px solid #8e9dad;
+  border-radius: 3px;
+  background: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cp-crumbs a { color: #000; cursor: pointer; }
+.cp-crumbs a:hover { text-decoration: underline; }
+.cp-crumbs i { color: #666; font-style: normal; font-size: 10px; }
+
+.cp-main { display: flex; flex: 1; min-height: 0; }
+
+/* The blue side pane down the left of every Windows 7 Control Panel page. */
+.cp-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 190px;
+  padding: 14px 12px;
+  background: linear-gradient(to right, #e3eefb, #f2f7fd);
+  border-right: 1px solid #cdddee;
+}
+
+.cp-side a {
+  padding: 3px 4px;
+  color: #1e3287;
+  cursor: pointer;
+}
+
+.cp-side a:hover { color: #3c64c8; text-decoration: underline; }
+.cp-side a.current { font-weight: bold; color: #000; }
+
+.cp-seealso {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #cdddee;
+  color: #666;
+}
+
+.cp-content {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 24px;
+  overflow: auto;
+  background: #fff;
+}
+
+.cp-content h1 { margin: 0 0 14px; font: 15px "Segoe UI", Tahoma, sans-serif; color: #1e3287; }
+.cp-content h2 { margin: 18px 0 8px; font: 13px "Segoe UI", Tahoma, sans-serif; color: #1e3287; }
+.cp-lead { margin: 0 0 10px; color: #444; }
+
+/* Category view: icon, green heading, blue links (as in Windows 7). */
+.cp-categories { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 24px; }
+.cp-category { display: flex; gap: 10px; }
+.cp-icon svg { width: 48px; height: 48px; }
+.cp-category-title { display: block; margin-bottom: 3px; font-size: 14px; color: #0f7a1c; cursor: pointer; }
+.cp-category-title:hover { color: #23a531; text-decoration: underline; }
+.cp-sublink { display: block; color: #1e3287; cursor: pointer; line-height: 1.6; }
+.cp-sublink:hover { color: #3c64c8; text-decoration: underline; }
+
+.cp-wallpapers { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+
+.cp-wallpaper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cp-wallpaper img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border: 1px solid #999; }
+.cp-wallpaper:hover, .cp-colour:hover { border-color: #7da2ce; background: linear-gradient(#f2f9fd, #dceffd); }
+.cp-wallpaper.selected, .cp-colour.selected { border-color: #3c7fb1; background: linear-gradient(#e5f3fb, #c4e5f6); }
+
+.cp-colours { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.cp-colour {
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+}
+
+.cp-colour span {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.cp-current { margin: 8px 0; }
+.cp-check, .cp-radio { display: block; margin: 6px 0; }
+.cp-radio span { color: #666; }
+.cp-slider { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.cp-slider input { width: 200px; }
+
+.cp-content select { padding: 2px; font: inherit; }
+
+.cp-button {
+  padding: 4px 14px;
+  border: 1px solid #707070;
+  border-radius: 3px;
+  background: linear-gradient(#f2f2f2, #ebebeb 50%, #dddddd 51%, #cfcfcf);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cp-button:hover { border-color: #3c7fb1; background: linear-gradient(#eaf6fd, #d9f0fc 50%, #bee6fd 51%, #a7d9f5); }
+
+.cp-info { border-collapse: collapse; }
+.cp-info td { padding: 4px 16px 4px 0; vertical-align: top; }
+.cp-info td:first-child { width: 170px; color: #555; }
+
+.cp-rating {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid #2a5d9a;
+  border-radius: 3px;
+  background: linear-gradient(#5c9fe3, #2466b8);
+  color: #fff;
+  font-weight: bold;
+}

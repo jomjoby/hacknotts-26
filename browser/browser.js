@@ -998,5 +998,8 @@
     newTab: address => (win ? newTab(address || config.homepage) : open(address)),
     registerSite,
     get sites() { return sites.map(s => ({ ...s })); },
+    // For the Control Panel: change the home page or the year real websites come from.
+    configure: options => { Object.assign(config, options); return { homepage: config.homepage, year: config.year }; },
+    get settings() { return { homepage: config.homepage, year: config.year }; },
   };
 })();
