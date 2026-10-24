@@ -2,33 +2,28 @@
 
 A Firefox-on-Windows-7 style web browser for the OS: Aero glass window, tabs, back/forward/reload/home, address bar, a fake search engine (Notts Search), bookmarks bar, a green progress bar and a status bar. Double-click the Firefox icon on the desktop to open it.
 
-The "web" is made of HTML files in this repo. Each one is registered with an address, so typing `msn.com` opens `msn/index.html`. Unknown addresses get a retro "Server not found" page, and anything that isn't an address goes to Notts Search.
+What you can visit:
 
-## Trying it
+- **Our own sites**: HTML files in this repo, registered with an address, so typing `msn.com` opens `msn/index.html`.
+- **Real websites, as they were in the 2000s**: type any address (or just `google`, `youtube`, `myspace`, `bebo`, `bbc`...) and it opens that site's archived copy from the [Wayback Machine](https://web.archive.org), e.g. Google in 2005. Real sites can't be shown live: almost all of them (Google, Bing, DuckDuckGo...) tell browsers not to display them inside another page, but the Wayback Machine's copies are allowed. The year is the `year` setting (default 2006); famous sites use their best year.
+- **Wikipedia, live**: Wikipedia allows being shown inside other pages, so its articles open for real.
+- **Notts Search**: anything that isn't an address is searched. Results are real, with no account or key: the topic's official site (DuckDuckGo instant answers), `www.<word>.com` if an old copy exists, and Wikipedia articles, plus one joke result.
 
-The browser isn't wired into the OS's `index.html` (that's the OS owner's file). To test it on its own, run a local server from the repo root and open the test desktop:
+Real websites need an internet connection and run in a sandbox, so their old scripts can't break out of the browser.
 
-```bash
-python3 -m http.server 8026
-```
+## Adding it to the OS
 
-Then go to http://localhost:8026/browser/demo.html and double-click the icon.
-
-## For the OS: adding it to `index.html`
-
-At the end of `<body>`:
+One line in the `<head>` of `index.html` loads both the browser and Clippy:
 
 ```html
-<link rel="stylesheet" href="browser/browser.css">
-<script src="browser/browser.js"></script>
-<script>
-  RetroBrowser.init({
-    launcher: '.desktop-icon',                       // double-click this to open the browser
-    taskbar: '.taskbar',                             // optional: add a button here while it's open
-    icon: 'images/Mozilla_Firefox_logo_2004.webp',
-  });
-</script>
+<script src="addons/addons.js" defer></script>
 ```
+
+All the settings live in [`addons/addons.js`](../addons/addons.js), so changing them never touches the OS's files. To test the browser on its own, open `browser/demo.html` instead (through a local server, e.g. `python3 -m http.server 8026` then http://localhost:8026/browser/demo.html).
+
+## Settings
+
+`addons/addons.js` calls `RetroBrowser.init({...})` with:
 
 | Option     | Default              | Meaning |
 | ---------- | -------------------- | ------- |
@@ -50,7 +45,7 @@ The window has `data-app-window="browser"`, so Clippy notices it, and Clippy can
 2. It opens in a browser tab at `http://messenger.msn.com/` (also reachable by typing `msn`, `msn.com` or `messenger`, the MSN bookmark, or asking Clippy to "open msn").
 3. It runs inside an iframe that fills the browser window, so make the layout fill its window (e.g. `height: 100vh`) and cope with being resized.
 4. Use paths relative to the page (`msn.css`, not `/msn/msn.css`).
-5. To link to another of our sites, use `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`.
+5. To link to another of our sites, use `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`. Also include `<script src="../browser/sites/site.js"></script>` so those links still work when the OS is opened straight from the file instead of a local server.
 6. Clippy can suggest cringey 2000s personal messages. To receive them:
    ```js
    parent.addEventListener('clippy:msn-status', e => setPersonalMessage(e.detail.text));

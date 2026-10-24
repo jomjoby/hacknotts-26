@@ -6,13 +6,13 @@ An offline desktop assistant for our Windows 7-style OS. No AI API or keys: it u
 
 ## Adding Clippy to the OS
 
-At the end of `<body>`:
+One line in the `<head>` of `index.html` loads Clippy (and the retro browser):
 
 ```html
-<link rel="stylesheet" href="clippy/clippy.css">
-<script src="clippy/clippy.js"></script>
-<script>Clippy.init({ bottom: 56 }); // px above the screen bottom, so it sits over the taskbar</script>
+<script src="addons/addons.js" defer></script>
 ```
+
+Clippy's settings (like `Clippy.init({ bottom: 80 })`, its distance from the screen bottom) live in [`addons/addons.js`](../addons/addons.js), so they never touch the OS's files.
 
 ## How Clippy sees what's open
 
