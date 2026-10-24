@@ -109,7 +109,8 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
     taskbarBtn.title = title;
     taskbarBtn.innerHTML = '<img alt="">';
     taskbarBtn.querySelector('img').src = icon;
-    document.querySelector('.taskbar').appendChild(taskbarBtn);
+    const taskbar = document.querySelector('.taskbar');
+    taskbar.insertBefore(taskbarBtn, taskbar.querySelector('.taskbar-clock')); // the clock stays at the far right
 
     let restoreRect = null;
     const isMinimised = () => el.classList.contains('os-minimised');

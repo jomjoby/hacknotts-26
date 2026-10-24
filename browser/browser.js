@@ -557,7 +557,7 @@
       else if (isTop()) minimise();
       else focusWindow();
     });
-    taskbar.appendChild(btn);
+    taskbar.insertBefore(btn, taskbar.querySelector('.taskbar-clock')); // keep the OS clock at the far right
     win.taskbarBtn = btn;
   }
 
