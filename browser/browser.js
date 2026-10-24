@@ -19,6 +19,7 @@
     icon: '',                     // image used for the window, taskbar button and title bar
     homepage: 'www.nottsnet.co.uk',
     launcher: null,               // CSS selector for desktop icons that open the browser on double-click
+    taskbar: null,                // CSS selector for a taskbar to add a button to while open (optional)
     bottom: 80,                   // space to leave for the taskbar
     base: '',                     // prefix for site file paths, if the OS isn't at the site root
   };
@@ -364,9 +365,10 @@
     });
   }
 
-  // A button on the OS taskbar while the browser is open: click to minimise or restore.
+  // If asked to, put a button on the OS taskbar while the browser is open: click to minimise or restore.
+  // Without one, RetroBrowser.open() (or the launcher icon) brings a minimised browser back.
   function addTaskbarButton() {
-    const taskbar = document.querySelector('.taskbar');
+    const taskbar = config.taskbar && document.querySelector(config.taskbar);
     if (!taskbar) return;
     const btn = document.createElement('div');
     btn.className = 'taskbar-btn rb-taskbar-btn';

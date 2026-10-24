@@ -4,25 +4,45 @@ A Firefox-on-Windows-7 style web browser for the OS: Aero glass window, tabs, ba
 
 The "web" is made of HTML files in this repo. Each one is registered with an address, so typing `msn.com` opens `msn/index.html`. Unknown addresses get a retro "Server not found" page, and anything that isn't an address goes to Notts Search.
 
-## Adding it to the OS
+## Trying it
+
+The browser isn't wired into the OS's `index.html` (that's the OS owner's file). To test it on its own, run a local server from the repo root and open the test desktop:
+
+```bash
+python3 -m http.server 8026
+```
+
+Then go to http://localhost:8026/browser/demo.html and double-click the icon.
+
+## For the OS: adding it to `index.html`
+
+At the end of `<body>`:
 
 ```html
 <link rel="stylesheet" href="browser/browser.css">
 <script src="browser/browser.js"></script>
-<script>RetroBrowser.init({ launcher: '.desktop-icon', icon: 'images/Mozilla_Firefox_logo_2004.webp' });</script>
+<script>
+  RetroBrowser.init({
+    launcher: '.desktop-icon',                       // double-click this to open the browser
+    taskbar: '.taskbar',                             // optional: add a button here while it's open
+    icon: 'images/Mozilla_Firefox_logo_2004.webp',
+  });
+</script>
 ```
 
 | Option     | Default              | Meaning |
 | ---------- | -------------------- | ------- |
 | `launcher` | none                 | CSS selector for icons that open the browser on double-click |
+| `taskbar`  | none                 | CSS selector for a taskbar to add a minimise/restore button to while open. Leave it out if the OS manages its own taskbar buttons. |
 | `icon`     | a globe              | Image for the title bar and taskbar button |
 | `name`     | `Mozilla Firefox`    | Shown in the title bar |
 | `homepage` | `www.nottsnet.co.uk` | Home button and new tabs |
 | `bottom`   | `80`                 | Space left for the taskbar when maximised |
+| `base`     | `''`                 | Prefix for site paths, if the page isn't at the repo root |
 
-JS API: `RetroBrowser.open(address?)`, `navigate(address)`, `newTab(address?)`, `close()`, `registerSite({...})`.
+Or open it from anywhere in code (a start menu entry, say): `RetroBrowser.open()`, `RetroBrowser.open('msn.com')`. Also `navigate(address)`, `newTab(address?)`, `close()`, `registerSite({...})`. Calling `open()` also brings back a minimised browser.
 
-While it's open the browser adds its own button to `.taskbar` (click to minimise/restore). The window has `data-app-window="browser"`, so Clippy notices it, and Clippy can open and close it.
+The window has `data-app-window="browser"`, so Clippy notices it, and Clippy can open and close it.
 
 ## For the MSN Messenger page
 
