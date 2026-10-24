@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Purble Place – art gallery</title>
+<style>
+  body { margin: 0; padding: 14px; background: #e9e3f5; font: 13px 'Segoe UI', sans-serif; color: #2b1b3a; }
+  h2 { margin: 18px 0 6px; font-size: 15px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cell { width: 118px; text-align: center; background: #fff; border-radius: 8px; padding: 4px; font-size: 11px; }
+  .cell svg { width: 100%; height: 84px; display: block; overflow: visible; }
+  .tile svg { height: 70px; }
+  .belt { background: #3b3f4a; }
+</style>
+<link rel="stylesheet" href="../src/styles/index.css">
+</head>
+<body class="pp-root" style="height:auto;overflow:auto;display:block;background:#e9e3f5;user-select:text">
+<div id="out"></div>
+<script type="module">
+  import { cakeSVG, controlIcon } from '../src/games/comfy-cakes/art.js';
+  import { SHAPES, BATTERS, ICINGS, TOPPINGS } from '../src/games/comfy-cakes/config.js';
+  import { SYMBOLS, symbolSVG } from '../src/games/purble-pairs/art.js';
+  import { ITEM_COLORS, glyphSVG, itemStyle } from '../src/games/purble-shop/art.js';
+  import { purble, MOODS, ALL_HATS as HATS, BODY_COLORS } from '../src/core/purble.js';
+
+  const out = document.getElementById('out');
+  const section = (title, cells) => { out.insertAdjacentHTML('beforeend', `<h2>${title}</h2><div class="row">${cells.join('')}</div>`); };
+  const cell = (svg, label, cls = '') => `<div class="cell ${cls}">${svg}${label}</div>`;
+
+  section('Cake shapes × batters (golden bake, white icing)', SHAPES.flatMap((s) => BATTERS.map((b) => cell(cakeSVG({ shape: s.id, batter: b.id, icing: 'white', toppings: {} }), `${s.name} / ${b.name}`))));
+  section('Icings (round, vanilla)', ICINGS.map((i) => cell(cakeSVG({ shape: 'round', batter: 'vanilla', icing: i.id, toppings: {} }), i.name)));
+  section('Toppings (heart, strawberry, white)', [
+    ...TOPPINGS.map((t) => cell(cakeSVG({ shape: 'heart', batter: 'strawberry', icing: 'white', toppings: { [t.id]: 1 } }), t.name)),
+    cell(cakeSVG({ shape: 'star', batter: 'chocolate', icing: 'pink', toppings: { candles: 2, cherry: 1 } }), '2 candles + cherry'),
+    cell(cakeSVG({ shape: 'square', batter: 'lemon', icing: 'mint', toppings: { candles: 3, sprinkles: 1 } }), '3 candles + sprinkles'),
+  ]);
+  const cake = (o) => ({ shape: 'round', batter: 'vanilla', toppings: {}, work: null, baked: true, icing: null, ...o });
+  import('../src/games/comfy-cakes/art.js').then(({ cakeMarkup }) => {
+    const raw = (o, label) => cell(`<svg viewBox="-60 -76 120 110">${cakeMarkup(cake(o))}</svg>`, label);
+    section('Bake stages', [
+      raw({ baked: false, batter: null, bake: 0 }, 'empty pan'),
+      raw({ baked: false, bake: 0.02, work: { kind: 'pour', t: 0.5, dur: 1 } }, 'pouring'),
+      raw({ baked: false, bake: 0 }, 'raw batter'),
+      raw({ baked: false, bake: 0.4 }, 'rising 0.4'),
+      raw({ baked: false, bake: 0.6 }, 'in oven 0.6'),
+      raw({ bake: 0.45 }, 'out: raw .45'),
+      raw({ bake: 0.64 }, 'golden .64'),
+      raw({ bake: 0.8 }, 'edge .8'),
+      raw({ bake: 0.9 }, 'burnt .9'),
+      raw({ bake: 1 }, 'ruined 1'),
+      raw({ bake: 0.64, icing: 'pink', work: { kind: 'pipe', t: 0.3, dur: 0.9 } }, 'piping'),
+    ]);
+  });
+  section('Control icons', [
+    ...SHAPES.map((s) => cell(controlIcon('shape', s.id), s.name, 'tile')),
+    ...BATTERS.map((s) => cell(controlIcon('batter', s.id), s.name, 'tile')),
+    ...ICINGS.map((s) => cell(controlIcon('icing', s.id), s.name, 'tile')),
+    ...TOPPINGS.map((s) => cell(controlIcon('topping', s.id), s.name, 'tile')),
+  ]);
+  section('Purble Pairs symbols', SYMBOLS.map((s, i) => cell(symbolSVG(i), s.name, 'tile')));
+  section('Purble Shop items', ITEM_COLORS.map((c, i) => `<div class="cell tile"><span class="sh-item" style="--c:${c.hex};--cd:${itemStyle(i)['--cd']};width:50px;height:50px;margin:8px auto">${glyphSVG(c.glyph).replace('<svg', '<svg style="height:auto"')}</span>${c.name}</div>`));
+  section('Purble moods', MOODS.map((m, i) => cell(purble({ mood: m, body: BODY_COLORS[i], hat: HATS[i % HATS.length] }), m)));
+  section('Purble variants', [
+    cell(purble({ body: '#5fd0e0', antenna: true, suit: 'silver' }), 'antenna + silver suit'),
+    cell(purble({ body: '#ff7bb5', mood: 'worried' }), 'worried'),
+    cell(purble({ body: '#8fdc6a', hat: 'chef', lanyard: true }), 'lanyard'),
+    cell(purble({ body: '#b86bd6', bust: true }), 'head only'),
+  ]);
+  section('Purble hats', HATS.map((hname, i) => cell(purble({ hat: hname, lanyard: i % 2 === 0, body: BODY_COLORS[(i + 2) % BODY_COLORS.length] }), hname)));
+</script>
+</body>
+</html>
