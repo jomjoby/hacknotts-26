@@ -14,6 +14,9 @@ function shutDown() {
 }
 
 function openApp(app) {
+    // Like Windows 7, launching something closes the start menu.
+    document.getElementById("start-menu").style.display = "none";
+
     switch (app) {
         case "firefox":
             // The retro browser (browser/), loaded by addons/addons.js.

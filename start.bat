@@ -4,4 +4,4 @@ rem YouTube videos (and Purble Place in some browsers) only work this way, not w
 rem index.html is opened as a file. Close this window to stop.
 cd /d "%~dp0"
 start "" http://localhost:8000/
-python -m http.server 8000
+python addons\serve.py 8000

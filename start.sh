@@ -19,4 +19,4 @@ fi
 
 (sleep 1; open_browser) &
 echo "Serving the OS at $URL (close this window to stop)"
-python3 -m http.server "$PORT"
+python3 addons/serve.py "$PORT"
