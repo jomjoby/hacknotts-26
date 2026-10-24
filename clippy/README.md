@@ -1,0 +1,104 @@
+# Clippy
+
+An offline desktop assistant for our Windows 7-style OS. No AI API or keys: it understands requests with its own small intent classifier (Naive Bayes, trained on example phrases in `clippy.js`), watches what you do on the desktop, and can do small tasks for you.
+
+`demo.html` is a throwaway test desktop for trying Clippy on its own. It is **not** the real OS.
+
+## Adding Clippy to the OS
+
+At the end of `<body>`:
+
+```html
+<link rel="stylesheet" href="clippy/clippy.css">
+<script src="clippy/clippy.js"></script>
+<script>Clippy.init({ bottom: 56 }); // px above the screen bottom, so it sits over the taskbar</script>
+```
+
+## How Clippy sees what's open
+
+Pick either option (or both):
+
+1. **Zero effort:** give each app window the attribute `data-app-window="<id>"`. Clippy notices when one appears, disappears or is hidden.
+   ```html
+   <div class="window" data-app-window="msn">...</div>
+   ```
+2. **Events:** fire these on `window` when things happen:
+   ```js
+   window.dispatchEvent(new CustomEvent('os:app-opened', { detail: { id: 'msn', title: 'MSN Messenger' } }));
+   window.dispatchEvent(new CustomEvent('os:app-closed', { detail: { id: 'msn' } }));
+   window.dispatchEvent(new CustomEvent('os:app-focused', { detail: { id: 'msn' } }));
+   ```
+
+Built-in app ids: `msn`, `notepad`, `browser`, `computer`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
+
+```js
+Clippy.registerApp({
+  id: 'paint', name: 'Paint', aliases: ['paint', 'drawing'],
+  tips: [{ text: 'It looks like you\'re drawing! Want a tip?', choices: [{ label: 'Yes', cmd: 'help' }] }],
+});
+```
+
+## How Clippy does things
+
+Expose these on `window.OS` and Clippy will call them. If they're missing, Clippy fires the event instead.
+
+| Clippy wants to...  | Calls                    | Or fires event                      |
+| ------------------- | ------------------------ | ----------------------------------- |
+| Open an app         | `OS.openApp(id)`         | `clippy:open-app` `{ id }`          |
+| Close an app        | `OS.closeApp(id)`        | `clippy:close-app` `{ id }`         |
+| Change wallpaper    | `OS.setWallpaper()`      | `clippy:wallpaper`                  |
+| Set an MSN status   | n/a                      | `clippy:msn-status` `{ text }`      |
+
+For "write a letter", Clippy types into the focused text box, or into a `textarea` inside `[data-app-window="notepad"]`.
+
+## Things to try
+
+- "Open MSN and tell me a joke"
+- "What's 12 x (7 + 3)?"
+- "Remind me in 5 minutes to drink my water"
+- "Give me an MSN status" (then "Use it")
+- "Write a letter", or type "Dear Sam," in any text box
+- "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
+- "What's open?", "Close everything", "Change the wallpaper"
+- "Be quiet" / "Talk more" / "Go away" (press **F1** to bring Clippy back)
+
+- Typos are fine: "opne notpad" works
+- "Turn on your voice" (or the speaker button) reads replies aloud using the browser's built-in speech
+
+It also notices you opening apps, typing in caps, rage-clicking and going idle (it falls asleep), and its eyes follow your mouse. It chimes when it pipes up on its own.
+
+## Brains: classic or AI
+
+Click the cog in Clippy's bubble, or type "settings", to choose:
+
+| Brain | What it is | Needs |
+| ----- | ---------- | ----- |
+| **Classic** (default) | The built-in classifier. Instant, works offline. | Nothing |
+| **Built-in AI** | Llama 3.2 1B running inside the browser with [WebLLM](https://github.com/mlc-ai/web-llm). Free, private, nothing sent anywhere. | Chrome or Edge with WebGPU. ~1GB download the first time, then cached. |
+| **Claude** | Claude via the Anthropic API. The smartest option. | An Anthropic API key, pasted into Clippy. Stored only in that browser's localStorage. |
+
+In the AI brains, clear commands ("open MSN", timers, maths) are still handled instantly by the classic brain; the AI handles chat and anything it doesn't recognise, and can trigger the same actions itself. Clippy remembers the last few messages so follow-ups like "damn" make sense.
+
+To start in the built-in AI brain by default: `Clippy.init({ brain: 'local' })`. **Never put an API key in the code**: this repo is public.
+
+## It learns
+
+When Clippy isn't sure, it asks "did you mean...". Picking an answer teaches it that phrase, saved in the browser, so it understands next time.
+
+## Adding voice lines
+
+Everything Clippy says is in the `LINES` table at the top of `clippy.js`. Add lines to any list; `{placeholders}` like `{app}` or `{who}` are filled in automatically. Lines are shuffled so none repeats until the whole list has been used.
+
+## Other JS API
+
+`Clippy.say(text)`, `Clippy.ask(text)`, `Clippy.open()`, `Clippy.show()`, `Clippy.hide()`, `Clippy.understand(text)` (debug: shows what Clippy thinks a sentence means).
+
+## Running the test desktop
+
+The scripts need to be served over http rather than opened as a file:
+
+```bash
+python3 -m http.server 8026
+```
+
+Then open http://localhost:8026/clippy/demo.html
