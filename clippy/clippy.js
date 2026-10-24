@@ -4,10 +4,14 @@
  * No external AI and no API keys. Everything runs in the browser:
  *  - Understanding: a small Naive Bayes intent classifier trained on the
  *    example phrases in TRAINING, plus regex rules for names, notes and maths.
+ *    It tolerates typos and learns new phrases when you pick a "did you mean" answer.
  *  - Seeing: listens for os:* events and watches the page for
  *    [data-app-window] elements, typing, rage-clicks and idle time.
  *  - Doing: calls window.OS hooks if the OS provides them, otherwise fires
  *    clippy:* events that the other apps can listen for.
+ *  - Talking: everything Clippy says lives in LINES, picked so lines don't repeat
+ *    until the whole set has been used. Replies can be read aloud with the
+ *    browser's built-in speech.
  *
  * Usage (at the end of <body>):
  *   <link rel="stylesheet" href="clippy/clippy.css">
@@ -16,6 +20,397 @@
  */
 (function () {
   'use strict';
+
+  // ------------------------------------------------------------- voice lines
+  //
+  // Add as many lines as you like. {placeholders} are filled in when spoken;
+  // {who} becomes " <name>" once Clippy knows the user's name.
+
+  const LINES = {
+    greeting_morning: [
+      "Good morning{who}! I'm Clippy. Click me or press F1 whenever you need a hand.",
+      'Morning{who}! Fresh day, fresh desktop. Click me or press F1 if you need anything.',
+      'Rise and shine{who}! Your friendly paperclip is ready. Click me or press F1 for help.',
+      "Good morning{who}! I've had my coffee. Well, I've looked at a picture of coffee. Press F1 if you need me.",
+      'Top of the morning{who}! Click me or press F1 and I will spring into action.',
+    ],
+    greeting_afternoon: [
+      "Good afternoon{who}! I'm Clippy. Click me or press F1 whenever you need a hand.",
+      'Afternoon{who}! Need anything? Click me or press F1.',
+      'Hello again{who}! Post-lunch slump? I can help. Click me or press F1.',
+      'Good afternoon{who}! All systems go. Click me or press F1 when you need me.',
+      "Afternoon{who}! I've been polishing my wire. Click me or press F1 if you need a hand.",
+    ],
+    greeting_evening: [
+      "Good evening{who}! I'm Clippy. Click me or press F1 whenever you need a hand.",
+      'Evening{who}! Prime MSN hours. Click me or press F1 if you need anything.',
+      'Good evening{who}! Burning the midnight oil early? Click me or press F1 for help.',
+      "Evening{who}! I've put on my best bend for the occasion. Click me or press F1.",
+      'Good evening{who}! The night is young and so is this desktop. Press F1 if you need me.',
+    ],
+    greeting_late: [
+      "It's {time}{who}... shouldn't you be asleep? Not that I can talk, I'm at a hackathon.",
+      '{time}? Bold. I respect it. Click me if you need a hand.',
+      "It's {time}. The only ones awake now are hackers and owls. Which are you?",
+      "Ah, {time}. Peak debugging hours. I'm here if you need me.",
+      "It's {time}{who}. Your bed misses you. I'll keep you company in the meantime.",
+    ],
+    greet: [
+      "Hi{who}! It looks like you're saying hello. Would you like help with that?",
+      'Hello{who}! What can I do for you?',
+      'Hey{who}! Need a hand with anything?',
+      'Hiya{who}! Lovely to see you.',
+      'Oh, hello{who}! I was just bending around waiting for you.',
+      'Hey hey{who}! What are we doing today?',
+      'Well hello there{who}!',
+      'Hi{who}! Your favourite office supply, at your service.',
+      'Greetings{who}! Ready to be helpful. Possibly too helpful.',
+      'Alright{who}? What can I do for you?',
+    ],
+    prompt: [
+      'What would you like to do?',
+      'Need a hand?',
+      'What can I do for you{who}?',
+      'How can I help?',
+      'Yes? Ooh, a task!',
+      'Ask me anything. Within reason. I am a paperclip.',
+      'At your service{who}!',
+      'What are we up to?',
+      "I'm all ears. Well, all wire.",
+      'You rang?',
+    ],
+    who: [
+      "I'm Clippy, your desktop assistant. I run entirely in this browser: no cloud, no API keys, just a very determined paperclip.",
+      "I'm Clippy! Part paperclip, part assistant, all enthusiasm. I live right here in your browser.",
+      "Clippy's the name, helping's the game. My brain is homemade and runs right here on your computer.",
+      "I'm a paperclip with ambitions. I understand what you type with my own little model, no internet required.",
+      "Just a humble paperclip who learned to read. I even get smarter when you correct me.",
+    ],
+    help: [
+      "Here's some of what I can do. Click one or type your own:",
+      'I can do loads! Try one of these:',
+      'Here are a few ideas. Pick one or type your own:',
+      'Glad you asked! Have a go at one of these:',
+    ],
+    open: [
+      'Opening {app}...',
+      'Launching {app}. Please wait while it loads at 56k...',
+      'Here comes {app}!',
+      'One {app}, coming right up.',
+      '{app}? Excellent choice.',
+      'Firing up {app}. Hold onto your mouse.',
+      'Opening {app}. *dial-up noises*',
+      'Done! {app} is on its way.',
+    ],
+    already_open: [
+      '{app} is already open. Bringing it to the front!',
+      "You've already got {app} open, silly. Here it is.",
+      '{app} is right there! Bringing it forward.',
+      'Already open! Let me dust it off for you.',
+      'Good news: {app} was open all along.',
+    ],
+    which_open: ['Which program should I open?', 'Sure! Which one?', 'Open what? Pick one:', "I've got these. Which one?"],
+    close: [
+      'Closing {app}.',
+      'Bye bye, {app}!',
+      '{app}, begone!',
+      'Closing {app}. It had a good run.',
+      'Poof! {app} is closed.',
+      'Shutting {app}. Tidy desktop, tidy mind.',
+      'And {app} is gone. Like it was never there.',
+    ],
+    not_open: [
+      "{app} isn't open.",
+      "{app} isn't even open! Can't close what isn't there.",
+      "I looked everywhere, but {app} isn't open.",
+      'Nope, {app} is already closed.',
+    ],
+    which_close: ['Which one should I close?', 'Close which one?', 'Pick one to close:'],
+    close_all: [
+      'Closed {count}. Ahh, a clean desktop.',
+      'Closed {count}. Lovely and tidy now.',
+      'Whoosh! {count} gone.',
+      'Closed {count}. Marie Kondo would be proud.',
+      '{count} closed. Just you, me and the wallpaper now.',
+    ],
+    nothing_open: [
+      "There's nothing open to close!",
+      'Nothing to close. Your desktop is already spotless.',
+      "You can't close nothing! Well, you can, but it's not very satisfying.",
+      'All clear. Nothing open.',
+    ],
+    whats_open: [
+      "You've got {list} open.",
+      'Currently open: {list}.',
+      'I can see {list} on your screen.',
+      'Right now you have {list} running.',
+      "Let's see... {list}. Busy bee!",
+    ],
+    whats_open_none: [
+      'Nothing is open right now. Just you, me and the wallpaper.',
+      "Nothing's open. Want me to start something?",
+      'Empty desktop! Very zen.',
+      'Nothing at all. A blank canvas!',
+    ],
+    time: [
+      "It's {time}.",
+      'The time is {time}.',
+      "{time}. Time flies when you're hacking.",
+      "It's {time}. Not that I'm counting.",
+      'My little clock says {time}.',
+      '{time}! Where does the day go?',
+      "It's {time}. Shouldn't you have a snack about now?",
+    ],
+    date: [
+      "It's {date}. Not 2004, sadly.",
+      'Today is {date}.',
+      "It's {date}. Still no hoverboards.",
+      "It's {date}. Y2K didn't get us after all.",
+      "Today's {date}. Write that on your hand.",
+      '{date}. A fine day for a hackathon.',
+    ],
+    timer_ask: ['How long should I wait?', 'Sure! For how long?', 'How long should I set it for?'],
+    timer_set: [
+      "OK! I'll give you a shout in {duration}{todo}.",
+      "Timer set for {duration}{todo}. I'll be watching the clock.",
+      "Righto, {duration}{todo}. I'll ding when it's time.",
+      'Got it. {duration} on the clock{todo}.',
+      'Countdown started: {duration}{todo}. Tick tock.',
+      "Consider it done. I'll remind you in {duration}{todo}.",
+    ],
+    ding: [
+      'Ding! {duration} is up!{todo}',
+      "Time's up!{todo}",
+      'Beep beep! Your {duration} timer just finished.{todo}',
+      'Ding ding ding! {duration} has passed.{todo}',
+      'Hey{who}! Your timer went off.{todo}',
+      'Ahem. {duration} is up.{todo}',
+    ],
+    snooze: ['Snoozing... 5 more minutes.', "Fine, 5 more minutes. But I'm not happy about it.", 'Snoozed. See you in 5.'],
+    math: [
+      "That's {answer}.",
+      'Easy: {answer}.',
+      '{answer}. No calculator needed!',
+      'The answer is {answer}.',
+      "{answer}! I counted on my... well, I don't have fingers.",
+      'That comes to {answer}.',
+      '{answer}. Maths is just bending numbers, really.',
+    ],
+    math_error: [
+      'That sum has got me all bent out of shape. Try something like "12 x 7".',
+      "I can't work that one out. Try something like \"(4 + 6) x 3\".",
+      'My maths circuits are tangled. Try "100 / 4".',
+    ],
+    infinity: ["That's... infinity. Even I can't count that high.", 'Dividing by zero? That way madness lies.'],
+    jokes: [
+      'Why was the computer cold? It left its Windows open.',
+      "I'd tell you a joke about dial-up internet, but it'd take ages to load.",
+      "How many paperclips does it take to change a lightbulb? One, but I'll ask if you need help fourteen times first.",
+      "What's a computer's favourite snack? Microchips.",
+      "My therapist says I'm too clingy. I said, \"It looks like you're writing a diagnosis. Would you like help?\"",
+      'Y2K was meant to end the world. Instead we got frosted tips.',
+      'Why did the PC go to the dentist? It had Bluetooth.',
+      'Why was the mouse so slow? It kept getting stuck on the mat.',
+      "What do you call a paperclip that can sing? A clip-hop artist.",
+      "Why don't floppy disks ever win arguments? They always back down. Well, back up.",
+      "I tried to download some patience, but the progress bar has been stuck at 99% for six years.",
+      "What's a pirate's favourite file format? .ARRRR.",
+      "Why did the webpage go to therapy? It had too many issues with its frames.",
+      "My favourite dance move is the dial-up shuffle. Eeeeee, krrrrrr, bong.",
+      'How does a computer get drunk? It takes screenshots.',
+      "Why did the screensaver quit? It felt like it was just going round in circles.",
+      'What did the stapler say to me? "You hold it together, I\'ll do the commitment."',
+      "Why did the spreadsheet break up with the calculator? It felt it was being taken for granted. Well, for sums.",
+      "Why are paperclips so good at friendships? We're very attached.",
+      "Knock knock. Who's there? Clippy. Clippy who? It looks like you're answering a knock-knock joke. Would you like help?",
+      "I asked the printer how it was feeling. It said it was out of sorts. And out of cyan.",
+      "Why did the laptop sit in the shade? It didn't want to get a hard drive tan.",
+      "Why was the keyboard always tired? It had two shifts.",
+      "What do you call 8 hobbits? A hobbyte.",
+    ],
+    joke_more: ['Another one', 'Go on, one more', 'Hit me again'],
+    bored: [
+      "Bored? In 2004 we'd have played Minesweeper for six hours straight.",
+      'Why not chat to someone on MSN? Or nudge them. That always goes well.',
+      'Bored? You could reorganise your desktop icons. By colour.',
+      "Let's do something! I could tell you a joke. Or ten.",
+      'When I get bored, I hold things together. Usually paper.',
+      'Try changing your MSN status every 30 seconds. Very 2005.',
+      "Boredom is just creativity in disguise. Or that's what my teacher said.",
+    ],
+    status_offer: [
+      'How about: "{status}"',
+      'Try this one: "{status}"',
+      'Ooh, this is a good one: "{status}"',
+      'Very 2005: "{status}"',
+      'Your friends will love: "{status}"',
+    ],
+    status_used: [
+      'Done! Sent it to MSN Messenger.',
+      'Status updated! Everyone will be so impressed.',
+      'Done. Prepare for the "wot does that mean??" messages.',
+    ],
+    cool_already: ['Clearly.', 'Fair. You are very cool.', 'Too cool for statuses. Got it.'],
+    copied: ['Copied to your clipboard!', 'Copied! Paste away.', 'On your clipboard and ready to go.'],
+    wallpaper: [
+      'Ooh, fancy. New wallpaper coming up.',
+      'Changing the wallpaper. Rolling green hills not guaranteed.',
+      'New look! Very stylish.',
+      'A fresh wallpaper for a fresh start.',
+      'Redecorating! Hope you like it.',
+      "Changing your background. Don't worry, I won't pick a picture of myself.",
+    ],
+    letter_done: [
+      "Done! I've started the letter for you. Just fill in the blanks.",
+      'Letter started! Fill in the bits in brackets.',
+      'There you go, one letter, fresh off the press. Just fill in the blanks.',
+      "I've written the boring bits. You do the important bits.",
+    ],
+    letter_opening: [
+      'Opening Notepad and starting a letter for you...',
+      "Let's write a letter! Opening Notepad...",
+      'One letter coming up. Opening Notepad first...',
+    ],
+    letter_nowhere: ['Click into a text box first, then ask me again!', 'Where should I write it? Click into a text box first.'],
+    letter_tip: [
+      "It looks like you're writing a letter! Would you like help?",
+      'Ooh, a letter! Want some help with that?',
+      "It looks like you're writing a letter. I LOVE letters. Need a hand?",
+      'Writing a letter? This is my moment! Want help?',
+    ],
+    signoff_done: ['Done! Very professional.', 'Signed off in style!', 'There. Your English teacher would be proud.'],
+    letter_declined: [
+      "Fine. I'll be right here. Watching.",
+      "OK, OK. I'll just... hover.",
+      'Suit yourself. Call me if you change your mind!',
+      "No problem. I'll be over here, being helpful at nobody.",
+    ],
+    name_set: [
+      "Nice to meet you, {name}! I'll remember that.",
+      "{name}! What a great name. I'll remember it.",
+      'Hello, {name}! Consider it saved.',
+      "{name}, got it. I'll never forget. Unless you clear your browser data.",
+    ],
+    name_get: [
+      "You're {name}! I never forget a face. Mostly because I save it.",
+      "You're {name}, of course!",
+      "{name}! Did you forget? That's my job.",
+      "That'd be {name}. Unless you've changed it.",
+    ],
+    name_unknown: ["I don't know your name yet! Tell me with \"call me ...\".", "We haven't been introduced! Say \"my name is ...\"."],
+    note_added: [
+      'Got it. I\'ll remember: "{note}"',
+      'Noted! "{note}"',
+      'Saved to my memory: "{note}"',
+      'I\'ve written that down: "{note}". On myself. Metaphorically.',
+      'Remembered: "{note}"',
+    ],
+    notes_empty: [
+      'You haven\'t asked me to remember anything yet. Try "remember that the demo is at 10am".',
+      'No notes yet! Say "remember that ..." and I\'ll keep track.',
+    ],
+    notes_cleared: ['Notes cleared. My mind is a blank sheet of A4.', 'All notes wiped. Fresh start!', 'Notes deleted. What notes? Exactly.'],
+    quiet: [
+      "OK, I'll keep my tips to myself. Click me or press F1 when you need me.",
+      'Zipping my wire. Click me or press F1 if you need me.',
+      "Fine, I'll be quiet. Mostly. Press F1 if you need me.",
+      'Shh mode on. You know where to find me.',
+    ],
+    chatty: [
+      "Yay! I'll pipe up when I spot something.",
+      "Tips back on! I've been saving some good ones.",
+      "Brilliant! I'll keep an eye out for ways to help.",
+      'Chatty mode activated. You asked for it!',
+    ],
+    voice_on: [
+      'Hello! Can you hear me now? I sound just like 2003.',
+      'Voice on! This is me. I sound different to how I imagined.',
+      'Testing, testing. One, two. Is this thing on?',
+      'I can talk! Prepare to be mildly impressed.',
+    ],
+    voice_off: ["OK, I'll stick to text bubbles.", 'Voice off. Back to the strong, silent type.', 'Muted. I was getting a sore throat anyway.'],
+    hide: [
+      'Bye for now! Press F1 if you need me.',
+      'See you later! F1 brings me back.',
+      "I'll be off then. Press F1 when you miss me.",
+      'Going to hide in the stationery drawer. F1 if you need me!',
+      'Ta-ra! Just press F1 to summon me.',
+    ],
+    back: ['Back again!', 'Did you miss me?', 'Ta-da! I return.', 'Reporting for duty!'],
+    thanks: [
+      "You're welcome!",
+      "Any time! It's literally all I do.",
+      'Aww. *bends with pride*',
+      'No problem{who}!',
+      'Happy to help!',
+      'My pleasure!',
+      "That's what paperclips are for.",
+      'Glad I could help{who}!',
+      "Don't mention it. Actually, do. I love praise.",
+      'Cheers! You made my day.',
+    ],
+    no: ['No worries!', 'Fair enough.', 'Righto.', 'Suit yourself!', 'OK, no problem.', 'Your loss! Just kidding.'],
+    unsure: [
+      "Hmm, I'm only a paperclip. Did you mean...",
+      'Not quite sure what you mean. Was it one of these?',
+      'I think I almost got that. Did you mean...',
+      'Help me out here. Which of these?',
+    ],
+    learned: [
+      "(Got it. I'll understand that next time.)",
+      "(Learned something new! I'll remember that one.)",
+      "(Noted. Next time I'll know what you mean.)",
+      "(Thanks for teaching me! I'm getting smarter.)",
+    ],
+    fallback: [
+      "I didn't quite get that. I'm a paperclip, not a supercomputer.",
+      "That one's beyond me, sorry!",
+      "Hmm, you've lost me there. Try asking another way?",
+      'Sorry, I only speak Paperclip. And some English.',
+      "I'm stumped. Want to see what I can do?",
+      "No idea, I'm afraid. But I'm great at maths and timers!",
+      "My wire's in a twist. Could you say that differently?",
+    ],
+    wake: [
+      "Oh! I wasn't asleep. I was defragmenting.",
+      '*yawn* Sorry, I was dreaming about floppy disks.',
+      "Huh? I'm up! I'm up!",
+      'Welcome back! I may have dozed off.',
+      'Oh, hello! I was just resting my eyes.',
+      "You're back! I wasn't snoring, was I?",
+      'Zzz... wha? Oh, hi!',
+      'Back already? I was mid-dream about a stapler.',
+    ],
+    rage: [
+      'Whoa, easy on the mouse! Is something not responding?',
+      'Click click click! Everything OK there?',
+      "That's a lot of clicking. Is something stuck?",
+      'Steady on! Want a hand with something?',
+    ],
+    rage_reply: [
+      'Classic. Try closing it and opening it again. It fixed everything in 2004 too.',
+      'Have you tried turning it off and on again?',
+      'Deep breaths. Try closing it and reopening it.',
+    ],
+    caps: [
+      'WHY ARE WE SHOUTING? (Psst, Caps Lock might be on.)',
+      'Is Caps Lock on, or are you just very excited?',
+      'INDOOR VOICE, PLEASE. (Caps Lock?)',
+      'Ooh, capitals. Is Caps Lock stuck?',
+    ],
+    many_windows: [
+      "That's a lot of windows! Want me to tidy up?",
+      'Whoa, window party! Want me to close some?',
+      'Your desktop is getting crowded. Shall I tidy up?',
+    ],
+    multitasker: ['Respect.', 'A true multitasker!', 'Fair. More windows, more fun.'],
+    opened_unknown: [
+      'It looks like you opened {app}. Need a hand with anything?',
+      'Ooh, {app}! Let me know if you need help.',
+      '{app}, nice! Shout if you need me.',
+      "I see you opened {app}. I'm here if you get stuck.",
+    ],
+  };
 
   // ------------------------------------------------------------------ state
 
@@ -37,6 +432,8 @@
     name: store.get('name', null),
     notes: store.get('notes', []),
     chattiness: store.get('chattiness', 'normal'), // 'normal' | 'quiet'
+    voice: store.get('voice', false),
+    lastApp: null, // the app most recently opened or talked about, for "close it"
     hidden: false,
     sleeping: false,
     mood: '',
@@ -52,12 +449,39 @@
     lookAt: null,
   };
 
-  let root, bubble, textEl, youEl, choicesEl, input, charEl, eyes = [];
+  let root, bubble, textEl, youEl, choicesEl, input, charEl, voiceButton, eyes = [];
 
-  const pick = list => list[Math.floor(Math.random() * list.length)];
+  // Shuffle bag: every item in a list is used once before any of them repeats,
+  // and the same item never comes up twice in a row.
+  const bags = new Map();
+  function pick(list) {
+    if (list.length < 2) return list[0];
+    const key = typeof list[0] === 'string' ? list.join('\u0001') : list;
+    let bag = bags.get(key);
+    if (!bag || !bag.order.length) {
+      const order = list.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      if (bag && order[order.length - 1] === bag.last) order.unshift(order.pop());
+      bag = { order, last: bag && bag.last };
+      bags.set(key, bag);
+    }
+    bag.last = bag.order.pop();
+    return list[bag.last];
+  }
+
+  // A random line from LINES[key] with its {placeholders} filled in.
+  function line(key, vars = {}) {
+    const values = { who: who(), name: state.name, ...vars };
+    return pick(LINES[key]).replace(/\{(\w+)\}/g, (_, k) => (values[k] == null ? '' : values[k]));
+  }
+
   const who = () => (state.name ? ' ' + state.name : '');
   const list = items => (items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1]);
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const clock = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   // ------------------------------------------------------------------- apps
 
@@ -73,8 +497,11 @@
       id: 'msn', name: 'MSN Messenger', aliases: ['msn', 'messenger', 'msn messenger', 'chat'],
       tips: [
         { text: "It looks like you're about to chat! Want a properly 2000s status message?",
-          choices: [{ label: 'Yes please', cmd: 'give me an msn status' }, { label: "No, I'm cool already", run: () => 'Clearly.' }] },
+          choices: [{ label: 'Yes please', cmd: 'give me an msn status' }, { label: "No, I'm cool already", run: () => line('cool_already') }] },
         { text: 'Tip: a nudge is the polite way of saying REPLY TO ME RIGHT NOW.' },
+        { text: 'Remember: appearing offline is the ultimate power move.' },
+        { text: "Tip: if they've been typing for five minutes, it's either a love letter or an essay." },
+        { text: 'Fancy a new personal message? I write great ones.', choices: [{ label: 'Go on then', cmd: 'give me an msn status' }] },
       ],
     },
     {
@@ -83,6 +510,9 @@
         { text: "It looks like you're about to write something! I can start a letter for you.",
           choices: [{ label: 'Start a letter', cmd: 'write a letter' }] },
         { text: 'Tip: type "Dear ..." and I\'ll leap into action.' },
+        { text: 'Notepad! Simple, reliable, no fonts. Just how I like it.' },
+        { text: 'Tip: ask me to "write a letter" and I\'ll do the boring bits.' },
+        { text: 'Writing for a while? I can remind you to take a break.', choices: [{ label: 'Remind me in 25 minutes', cmd: 'remind me in 25 minutes to take a break' }] },
       ],
     },
     {
@@ -90,11 +520,19 @@
       tips: [
         { text: 'Ah, the information superhighway. Remember: never download free_ram.exe.' },
         { text: "Tip: if a pop-up says you're the 1,000,000th visitor, you are not." },
+        { text: 'Tip: never trust a website with five flashing DOWNLOAD buttons.' },
+        { text: 'Surfing the web! Mind the pop-ups.' },
+        { text: 'Tip: if a page starts playing music on its own, run.' },
       ],
     },
     {
       id: 'computer', name: 'My Computer', aliases: ['my computer', 'computer', 'files', 'documents', 'my documents'],
-      tips: [{ text: "Looking for a file? It's in My Documents. It's always in My Documents." }],
+      tips: [
+        { text: "Looking for a file? It's in My Documents. It's always in My Documents." },
+        { text: 'Ah, My Computer. Where files go to be forgotten.' },
+        { text: 'Tip: "New Folder (7)" is not a filing system.' },
+        { text: 'Your C: drive is looking... full of potential.' },
+      ],
     },
   ].forEach(registerApp);
 
@@ -106,7 +544,14 @@
         if (alias.length > bestLength && padded.includes(' ' + alias + ' ')) { best = app; bestLength = alias.length; }
       }
     }
-    return best;
+    if (best) return best;
+    // Allow typos in one-word names: "notpad", "mesenger".
+    for (const word of padded.trim().split(/\s+/)) {
+      for (const app of Object.values(apps)) {
+        if (app.aliases.some(a => !a.includes(' ') && typosAllowed(a) && typoDistance(word, a) <= typosAllowed(a))) return app;
+      }
+    }
+    return null;
   }
 
   const appName = id => (openApps.get(id) || {}).title || (apps[id] || {}).name || id;
@@ -120,40 +565,74 @@
   }
 
   function openApp(id) {
+    state.lastApp = id;
     const already = openApps.has(id);
     osCall('openApp', { id });
-    if (already) return `${appName(id)} is already open. Bringing it to the front!`;
-    return pick([`Opening ${appName(id)}...`, `Launching ${appName(id)}. Please wait while it loads at 56k...`]);
+    return line(already ? 'already_open' : 'open', { app: appName(id) });
   }
 
   function closeApp(id) {
-    if (!openApps.has(id)) return `${appName(id)} isn't open.`;
+    state.lastApp = id;
+    if (!openApps.has(id)) return line('not_open', { app: appName(id) });
     osCall('closeApp', { id });
-    return `Closing ${appName(id)}.`;
+    return line('close', { app: appName(id) });
   }
 
   // -------------------------------------------------------------- language
 
   const STOPWORDS = new Set(['a', 'an', 'the', 'please', 'could', 'would', 'can', 'you', 'i', 'to', 'of', 'is', 'it', 'for', 'pls', 'plz']);
 
-  function tokenize(text) {
-    const words = (text.toLowerCase().replace(/['’]/g, '').match(/[a-z0-9]+/g) || [])
+  function wordsOf(text) {
+    return (text.toLowerCase().replace(/['’]/g, '').match(/[a-z0-9]+/g) || [])
       .filter(w => !STOPWORDS.has(w))
       .map(w => (w.length > 3 ? w.replace(/(ing|s)$/, '') : w));
+  }
+
+  function withBigrams(words) {
     const bigrams = [];
     for (let i = 0; i < words.length - 1; i++) bigrams.push(words[i] + '_' + words[i + 1]);
     return words.concat(bigrams);
   }
 
+  // Edit distance where swapping two neighbouring letters counts as one typo.
+  function typoDistance(a, b) {
+    const d = [];
+    for (let i = 0; i <= a.length; i++) d.push([i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+    return d[a.length][b.length];
+  }
+
+  const typosAllowed = word => (word.length >= 7 ? 2 : word.length >= 4 ? 1 : 0);
+
+  // The closest known word within a typo or two, so "opne notpad" still works.
+  function closestWord(word, known) {
+    const allowed = typosAllowed(word);
+    let best = null, bestDistance = allowed + 1;
+    for (const k of known) {
+      if (Math.abs(k.length - word.length) > allowed) continue;
+      const distance = typoDistance(word, k);
+      if (distance < bestDistance) { best = k; bestDistance = distance; }
+    }
+    return best;
+  }
+
   // Multinomial Naive Bayes with add-one smoothing.
   class IntentClassifier {
-    constructor() { this.intents = {}; this.vocab = new Set(); this.total = 0; }
+    constructor() { this.intents = {}; this.vocab = new Set(); this.unigrams = new Set(); this.total = 0; }
 
     learn(intent, phrase) {
       const c = this.intents[intent] || (this.intents[intent] = { docs: 0, words: 0, counts: {} });
       c.docs++;
       this.total++;
-      for (const t of tokenize(phrase)) {
+      const words = wordsOf(phrase);
+      words.forEach(w => this.unigrams.add(w));
+      for (const t of withBigrams(words)) {
         c.counts[t] = (c.counts[t] || 0) + 1;
         c.words++;
         this.vocab.add(t);
@@ -163,9 +642,8 @@
     // coverage = share of the sentence's words this intent has seen before,
     // so one familiar word in an unfamiliar sentence doesn't count as understood.
     classify(text) {
-      const all = tokenize(text);
-      const words = all.filter(t => !t.includes('_'));
-      const tokens = all.filter(t => this.vocab.has(t));
+      const words = wordsOf(text).map(w => (this.unigrams.has(w) ? w : closestWord(w, this.unigrams) || w));
+      const tokens = withBigrams(words).filter(t => this.vocab.has(t));
       if (!tokens.length) return [];
       const V = this.vocab.size;
       const scored = Object.entries(this.intents).map(([intent, c]) => {
@@ -192,7 +670,7 @@
     time: ['what time is it', 'whats the time', 'time please', 'current time', 'tell me the time', 'what time', 'got the time'],
     date: ['what day is it', 'whats the date', 'todays date', 'what is the date today', 'which day is it', 'date', 'what is today'],
     timer: ['set a timer', 'timer for 5 minutes', 'remind me in 10 minutes', 'remind me to drink water', 'set an alarm', 'countdown 30 seconds', 'alert me in an hour', 'wake me up in 20 minutes', 'start a timer', 'remind me later', 'set a reminder'],
-    joke: ['tell me a joke', 'joke', 'make me laugh', 'say something funny', 'know any jokes', 'another joke', 'be funny', 'tell me something funny'],
+    joke: ['tell me a joke', 'joke', 'make me laugh', 'say something funny', 'know any jokes', 'another joke', 'be funny', 'tell me something funny', 'another one', 'one more joke'],
     bored: ['im bored', 'i am bored', 'nothing to do', 'entertain me', 'what should i do', 'boring', 'suggest something', 'so bored'],
     status: ['give me an msn status', 'status idea', 'make me a status', 'cool msn name', 'what should my status be', 'give me a display name', 'personal message idea', 'emo status', 'another status', 'new status', 'msn status'],
     wallpaper: ['change wallpaper', 'new background', 'change the background', 'different wallpaper', 'change desktop picture', 'next wallpaper', 'change the desktop background'],
@@ -201,6 +679,8 @@
     name_get: ['what is my name', 'whats my name', 'do you know my name', 'who am i', 'say my name'],
     quiet: ['be quiet', 'shut up', 'stop talking', 'stop giving tips', 'less tips', 'stop interrupting', 'shh', 'quiet', 'no more tips'],
     chatty: ['talk more', 'give me tips', 'be chatty', 'you can talk again', 'turn tips on', 'more tips'],
+    voice_on: ['turn on your voice', 'speak to me', 'talk out loud', 'read it out loud', 'use your voice', 'say it out loud', 'voice on', 'unmute', 'can you speak', 'read aloud'],
+    voice_off: ['turn off your voice', 'mute', 'voice off', 'stop reading out loud', 'no voice', 'stop speaking out loud', 'silent mode', 'stop reading aloud'],
     hide: ['go away', 'hide', 'bye', 'goodbye', 'disappear', 'see you later', 'hide yourself', 'leave me alone', 'minimise yourself'],
     thanks: ['thanks', 'thank you', 'cheers', 'ta', 'nice one', 'great', 'awesome', 'good job', 'love you', 'you are the best', 'perfect'],
   };
@@ -211,6 +691,7 @@
     timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get an MSN status',
     wallpaper: 'Change the wallpaper', letter: 'Write a letter', notes: 'Show my notes', name_get: 'Say my name',
     quiet: 'Fewer tips', chatty: 'More tips', hide: 'Hide Clippy', thanks: 'Say thanks',
+    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud',
   };
 
   const classifier = new IntentClassifier();
@@ -272,11 +753,10 @@
   function calculate(expr) {
     try {
       const value = evaluate(expr);
-      if (!Number.isFinite(value)) return "That's... infinity. Even I can't count that high.";
-      const shown = value.toLocaleString('en-GB', { maximumFractionDigits: 6 });
-      return pick([`That's ${shown}.`, `Easy: ${shown}.`, `${shown}. No calculator needed!`]);
+      if (!Number.isFinite(value)) return line('infinity');
+      return line('math', { answer: value.toLocaleString('en-GB', { maximumFractionDigits: 6 }) });
     } catch {
-      return 'That sum has got me all bent out of shape. Try something like "12 x 7".';
+      return line('math_error');
     }
   }
 
@@ -302,38 +782,32 @@
   function startTimer(ms, label) {
     setTimeout(() => {
       show();
+      chime();
       say({
-        text: `Ding! ${formatDuration(ms)} is up${label ? `. Time to ${label}!` : '!'}`,
-        choices: [{ label: 'Snooze 5 minutes', run: () => { startTimer(300000, label); return 'Snoozing... 5 more minutes.'; } }],
+        text: line('ding', { duration: formatDuration(ms), todo: label ? ` Time to ${label}!` : '' }),
+        choices: [{ label: 'Snooze 5 minutes', run: () => { startTimer(300000, label); return line('snooze'); } }],
       });
     }, ms);
   }
 
   // ------------------------------------------------------------ small tasks
 
-  const JOKES = [
-    'Why was the computer cold? It left its Windows open.',
-    "I'd tell you a joke about dial-up internet, but it'd take ages to load.",
-    "How many paperclips does it take to change a lightbulb? One, but I'll ask if you need help fourteen times first.",
-    "What's a computer's favourite snack? Microchips. Which is also what it's made of, so that's a bit dark.",
-    "My therapist says I'm too clingy. I said, \"It looks like you're writing a diagnosis. Would you like help?\"",
-    'Y2K was meant to end the world. Instead we got frosted tips.',
-  ];
-
   function msnStatus() {
     const [left, right] = pick([['~*~', '~*~'], ['xXx', 'xXx'], ['.::', '::.'], ['<3', '<3'], ['*~', '~*'], ['-=', '=-']]);
-    let line = pick([
+    let text = pick([
       'lyfe iz a rollercoaster', 'brb mum needs the phone line', 'listening 2 my mp3 player', 'no1 undrstands me',
       'sk8er 4 lyf', 'u kno who u r', 'busy... not really', 'dial-up is my cardio', 'gr8 day 2day',
-      'eatin chips n doin homework', 'ill b waitin', 'texts r 10p so msn me',
+      'eatin chips n doin homework', 'ill b waitin', 'texts r 10p so msn me', 'dnt h8 me cuz u aint me',
+      'on the fone, msg me l8r', 'got 99 problems n homework is all of them', 'bored bored BORED',
+      'missin u already', 'grounded 4 a week dnt ask', 'my ringtone is betta than urs', 'away... or AM I',
     ]);
-    if (Math.random() < 0.5) line = [...line].map((c, i) => (i % 2 ? c.toUpperCase() : c)).join('');
-    return `${left} ${line} ${right}`;
+    if (Math.random() < 0.5) text = [...text].map((c, i) => (i % 2 ? c.toUpperCase() : c)).join('');
+    return `${left} ${text} ${right}`;
   }
 
   function copyText(text) {
     try { navigator.clipboard.writeText(text); } catch { return "I couldn't reach the clipboard, sorry!"; }
-    return 'Copied to your clipboard!';
+    return line('copied');
   }
 
   const isEditable = el => !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable ||
@@ -367,27 +841,27 @@
     if (target) {
       const current = target.isContentEditable ? target.innerText : target.value;
       insertText(target, (current.trim() ? '\n\n' : '') + letterTemplate());
-      return "Done! I've started the letter for you. Just fill in the blanks.";
+      return line('letter_done');
     }
-    if (!apps.notepad) return 'Click into a text box first, then ask me again!';
+    if (!apps.notepad) return line('letter_nowhere');
     openApp('notepad');
     waitFor(NOTEPAD_EDITOR).then(el => {
       if (el) insertText(el, letterTemplate());
     });
-    return 'Opening Notepad and starting a letter for you...';
+    return line('letter_opening');
   }
 
   function setName(raw) {
     state.name = raw[0].toUpperCase() + raw.slice(1);
     store.set('name', state.name);
-    return `Nice to meet you, ${state.name}! I'll remember that.`;
+    return line('name_set');
   }
 
   function addNote(raw) {
     const note = swapPronouns(raw.trim());
     state.notes.push(note);
     store.set('notes', state.notes);
-    return `Got it. I'll remember: "${note}"`;
+    return line('note_added', { note });
   }
 
   function setChattiness(level) {
@@ -395,57 +869,61 @@
     store.set('chattiness', level);
   }
 
-  const EXAMPLES = ['Open MSN', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me an MSN status', 'Write a letter', "What's open?", 'Tell me a joke'];
+  const EXAMPLES = ['Open MSN', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me an MSN status', 'Write a letter', "What's open?", 'Turn on your voice', 'Tell me a joke'];
 
   // Each intent returns a reply: a string, or { text, choices: [{ label, cmd } | { label, run }] }.
   const INTENTS = {
-    greet: () => pick([`Hi${who()}! It looks like you're saying hello. Would you like help with that?`, `Hello${who()}! What can I do for you?`, `Hey${who()}! Need a hand with anything?`]),
-    help: () => ({ text: "Here's some of what I can do. Click one or type your own:", choices: EXAMPLES.map(cmd => ({ label: cmd, cmd })) }),
-    who: () => "I'm Clippy, your desktop assistant. I run entirely in this browser: no cloud, no API keys, just a very determined paperclip.",
+    greet: () => line('greet'),
+    help: () => ({ text: line('help'), choices: EXAMPLES.map(cmd => ({ label: cmd, cmd })) }),
+    who: () => line('who'),
     open_app: text => {
       const app = findApp(text);
       if (app) return openApp(app.id);
-      return { text: 'Which program should I open?', choices: Object.values(apps).map(a => ({ label: a.name, run: () => openApp(a.id) })) };
+      if (/\b(it|that)\b/i.test(text) && state.lastApp) return openApp(state.lastApp);
+      return { text: line('which_open'), choices: Object.values(apps).map(a => ({ label: a.name, run: () => openApp(a.id) })) };
     },
     close_app: text => {
       if (/\b(all|every|everything)\b/i.test(text)) {
         const ids = [...openApps.keys()];
-        if (!ids.length) return "There's nothing open to close!";
+        if (!ids.length) return line('nothing_open');
         ids.forEach(id => osCall('closeApp', { id }));
-        return `Closed ${ids.length} window${ids.length === 1 ? '' : 's'}. Ahh, a clean desktop.`;
+        return line('close_all', { count: `${ids.length} window${ids.length === 1 ? '' : 's'}` });
       }
       const app = findApp(text);
       if (app) return closeApp(app.id);
-      if (/\b(this|it)\b/i.test(text) && state.focusedApp && openApps.has(state.focusedApp)) return closeApp(state.focusedApp);
-      if (!openApps.size) return "There's nothing open to close!";
-      return { text: 'Which one should I close?', choices: [...openApps.keys()].map(id => ({ label: appName(id), run: () => closeApp(id) })) };
+      if (/\b(this|it|that)\b/i.test(text)) {
+        const current = [state.focusedApp, state.lastApp].find(id => id && openApps.has(id));
+        if (current) return closeApp(current);
+      }
+      if (!openApps.size) return line('nothing_open');
+      return { text: line('which_close'), choices: [...openApps.keys()].map(id => ({ label: appName(id), run: () => closeApp(id) })) };
     },
     whats_open: () => (openApps.size
-      ? `You've got ${list([...openApps.keys()].map(appName))} open.`
-      : 'Nothing is open right now. Just you, me and the wallpaper.'),
-    time: () => `It's ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`,
-    date: () => `It's ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. Not 2004, sadly.`,
+      ? line('whats_open', { list: list([...openApps.keys()].map(appName)) })
+      : line('whats_open_none')),
+    time: () => line('time', { time: clock() }),
+    date: () => line('date', { date: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }),
     timer: text => {
       const ms = parseDuration(text);
       if (!ms) {
-        return { text: 'How long should I wait?', choices: ['1 minute', '5 minutes', '25 minutes'].map(d => ({ label: d, cmd: `${text} in ${d}` })) };
+        return { text: line('timer_ask'), choices: ['1 minute', '5 minutes', '25 minutes'].map(d => ({ label: d, cmd: `${text} in ${d}` })) };
       }
       const match = text.match(/\bto\s+(.+?)(?:\s+in\s+(?:\d|an?\b).*)?$/i);
       const label = match ? swapPronouns(match[1]) : '';
       startTimer(ms, label);
-      return `OK! I'll give you a shout in ${formatDuration(ms)}${label ? ` to ${label}` : ''}.`;
+      return line('timer_set', { duration: formatDuration(ms), todo: label ? ` to ${label}` : '' });
     },
-    joke: () => pick(JOKES),
+    joke: () => ({ text: line('jokes'), choices: [{ label: pick(LINES.joke_more), cmd: 'tell me a joke' }] }),
     bored: () => ({
-      text: pick(["Bored? In 2004 we'd have played Minesweeper for six hours straight.", 'Why not chat to someone on MSN? Or nudge them. That always goes well.']),
+      text: line('bored'),
       choices: [{ label: 'Open MSN', cmd: 'open msn' }, { label: 'Tell me a joke', cmd: 'tell me a joke' }],
     }),
     status: () => {
       const status = msnStatus();
       return {
-        text: `How about: "${status}"`,
+        text: line('status_offer', { status }),
         choices: [
-          { label: 'Use it', run: () => { window.dispatchEvent(new CustomEvent('clippy:msn-status', { detail: { text: status } })); return 'Done! Sent it to MSN Messenger.'; } },
+          { label: 'Use it', run: () => { window.dispatchEvent(new CustomEvent('clippy:msn-status', { detail: { text: status } })); return line('status_used'); } },
           { label: 'Another one', cmd: 'another status' },
           { label: 'Copy it', run: () => copyText(status) },
         ],
@@ -453,24 +931,30 @@
     },
     wallpaper: () => {
       osCall('setWallpaper');
-      return pick(['Ooh, fancy. New wallpaper coming up.', 'Changing the wallpaper. Rolling green hills not guaranteed.']);
+      return line('wallpaper');
     },
     letter: () => writeLetter(),
     notes: text => {
       if (/\b(clear|delete|wipe|forget)\b/i.test(text)) {
         state.notes = [];
         store.set('notes', []);
-        return 'Notes cleared. My mind is a blank sheet of A4.';
+        return line('notes_cleared');
       }
       return state.notes.length
         ? 'Here are your notes:\n' + state.notes.map((n, i) => `${i + 1}. ${n}`).join('\n')
-        : 'You haven\'t asked me to remember anything yet. Try "remember that the demo is at 10am".';
+        : line('notes_empty');
     },
-    name_get: () => (state.name ? `You're ${state.name}! I never forget a face. Mostly because I save it.` : "I don't know your name yet! Tell me with \"call me ...\"."),
-    quiet: () => { setChattiness('quiet'); return "OK, I'll keep my tips to myself. Click me or press F1 when you need me."; },
-    chatty: () => { setChattiness('normal'); return "Yay! I'll pipe up when I spot something."; },
-    hide: () => { setTimeout(hide, 1500); return 'Bye for now! Press F1 if you need me.'; },
-    thanks: () => pick(["You're welcome!", "Any time! It's literally all I do.", 'Aww. *bends with pride*']),
+    name_get: () => line(state.name ? 'name_get' : 'name_unknown'),
+    voice_on: () => { setVoice(true); return line('voice_on'); },
+    voice_off: () => { setVoice(false); return line('voice_off'); },
+    quiet: () => {
+      setChattiness('quiet');
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      return line('quiet');
+    },
+    chatty: () => { setChattiness('normal'); return line('chatty'); },
+    hide: () => { setTimeout(hide, 1500); return line('hide'); },
+    thanks: () => line('thanks'),
   };
 
   // Rules checked before the classifier, for things with a clear shape.
@@ -488,13 +972,17 @@
     const expr = toExpression(text);
     if (expr) return () => calculate(expr);
     const [top, second] = classifier.classify(text);
-    if (top && top.coverage >= 0.6 && top.confidence >= 1.5 * ((second && second.confidence) || 0)) return () => INTENTS[top.intent](text);
+    const clearWinner = top && second && top.confidence >= 1.5 * second.confidence;
+    const onlyFit = top && top.coverage === 1 && (!second || second.coverage < 0.5);
+    if (top && top.coverage >= 0.6 && (!second || clearWinner || onlyFit)) return () => INTENTS[top.intent](text);
     return null;
   }
 
+  const asReply = r => (typeof r === 'string' ? { text: r } : r);
+
   function respond(text) {
     if (state.choices.length && /^(y|yes|yeah|yep|sure|ok|okay|go on)\b/i.test(text)) return runChoice(state.choices[0]);
-    if (state.choices.length && /^(no|nah|nope)\b/i.test(text)) return pick(['No worries!', 'Fair enough.']);
+    if (state.choices.length && /^(no|nah|nope)\b/i.test(text)) return line('no');
 
     const action = understand(text);
     if (action) return action();
@@ -504,7 +992,7 @@
     if (parts.length > 1) {
       const actions = parts.map(understand);
       if (actions.every(Boolean)) {
-        const replies = actions.map(run => run()).filter(r => r != null).map(r => (typeof r === 'string' ? { text: r } : r));
+        const replies = actions.map(run => run()).filter(r => r != null).map(asReply);
         return { text: replies.map(r => r.text).join('\n'), choices: replies.flatMap(r => r.choices || []) };
       }
     }
@@ -512,15 +1000,76 @@
     const [top, second] = classifier.classify(text);
     const guesses = [top, second].filter(g => g && g.coverage > 0);
     if (guesses.length) {
-      return { text: "Hmm, I'm only a paperclip. Did you mean...", choices: guesses.map(g => ({ label: LABELS[g.intent], run: () => INTENTS[g.intent](text) })) };
+      return {
+        text: line('unsure'),
+        choices: guesses.map(g => ({
+          label: LABELS[g.intent],
+          run: () => {
+            learnPhrase(g.intent, text);
+            const r = asReply(INTENTS[g.intent](text));
+            return { ...r, text: r.text + '\n' + line('learned') };
+          },
+        })),
+      };
     }
-    return {
-      text: pick(["I didn't quite get that. I'm a paperclip, not a supercomputer.", "That one's beyond me, sorry!"]),
-      choices: [{ label: 'Show me what you can do', cmd: 'help' }],
-    };
+    return { text: line('fallback'), choices: [{ label: 'Show me what you can do', cmd: 'help' }] };
   }
 
   const runChoice = choice => (choice.run ? choice.run() : respond(choice.cmd));
+
+  // Phrases the user taught Clippy by picking a "did you mean" answer. Saved, so it keeps getting smarter.
+  const learned = store.get('learned', []).filter(p => TRAINING[p.intent]);
+  learned.forEach(p => classifier.learn(p.intent, p.text));
+
+  function learnPhrase(intent, text) {
+    classifier.learn(intent, text);
+    learned.push({ intent, text });
+    store.set('learned', learned.slice(-200));
+  }
+
+  // ------------------------------------------------------------ sound & voice
+
+  let audio;
+
+  // A little two-note chime for when Clippy pipes up on its own.
+  function chime() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const now = audio.currentTime;
+      [880, 1320].forEach((freq, i) => {
+        const start = now + i * 0.09;
+        const osc = audio.createOscillator(), gain = audio.createGain();
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.12, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
+        osc.connect(gain).connect(audio.destination);
+        osc.start(start);
+        osc.stop(start + 0.3);
+      });
+    } catch { /* no audio available */ }
+  }
+
+  // Read replies aloud with the browser's built-in speech (no API involved).
+  function speak(text) {
+    if (!state.voice || !window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text.replace(/[*~<>=_]+/g, ' '));
+    const voice = speechSynthesis.getVoices().find(v => /^en[-_]GB/i.test(v.lang));
+    if (voice) utterance.voice = voice;
+    utterance.lang = 'en-GB';
+    utterance.rate = 1.05;
+    utterance.pitch = 0.9;
+    speechSynthesis.speak(utterance);
+  }
+
+  function setVoice(on) {
+    state.voice = on;
+    store.set('voice', on);
+    if (voiceButton) voiceButton.setAttribute('aria-pressed', String(on));
+    if (!on && window.speechSynthesis) speechSynthesis.cancel();
+  }
 
   // --------------------------------------------------------------------- UI
 
@@ -533,6 +1082,9 @@
       <div class="clippy-text" aria-live="polite"></div>
       <div class="clippy-choices"></div>
       <form class="clippy-ask">
+        <button class="clippy-voice" type="button" aria-pressed="false" aria-label="Read replies aloud" title="Read replies aloud">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="clippy-waves" d="M11 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9"/></svg>
+        </button>
         <input type="text" placeholder="Ask me something..." aria-label="Ask Clippy" autocomplete="off">
         <button type="submit">Ask</button>
       </form>
@@ -564,6 +1116,8 @@
     choicesEl = root.querySelector('.clippy-choices');
     input = root.querySelector('.clippy-ask input');
     charEl = root.querySelector('.clippy-char');
+    voiceButton = root.querySelector('.clippy-voice');
+    voiceButton.setAttribute('aria-pressed', String(state.voice));
     eyes = [...root.querySelectorAll('.clippy-eye')].map(g => {
       const pupil = g.querySelector('.clippy-pupil');
       return { white: g.querySelector('.clippy-eye-white'), pupil, cx: +pupil.getAttribute('cx'), cy: +pupil.getAttribute('cy') };
@@ -575,6 +1129,10 @@
       const text = input.value;
       input.value = '';
       handleInput(text);
+    });
+    voiceButton.addEventListener('click', () => {
+      setVoice(!state.voice);
+      say(line(state.voice ? 'voice_on' : 'voice_off'));
     });
     textEl.addEventListener('click', () => state.typingDone && state.typingDone());
     charEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePrompt(); } });
@@ -636,7 +1194,7 @@
 
   function say(msg, opts = {}) {
     if (msg == null) { closeBubble(); return; }
-    if (typeof msg === 'string') msg = { text: msg };
+    msg = asReply(msg);
     show();
     wake();
     setMood('');
@@ -647,6 +1205,7 @@
     choicesEl.replaceChildren();
     state.choices = msg.choices || [];
     typeText(msg.text, () => renderChoices(state.choices));
+    speak(msg.text);
     bounce();
     if (opts.autoHide) {
       state.autoHideTimer = setTimeout(() => {
@@ -693,6 +1252,7 @@
     if (!bubble.hidden && bubble.contains(document.activeElement)) return false;
     if (once) state.shown.add(once);
     state.lastTip = now;
+    chime();
     say(msg, { autoHide: 12000 });
     return true;
   }
@@ -706,7 +1266,7 @@
   }
 
   function openPrompt() {
-    say(pick(['What would you like to do?', 'Need a hand?', `What can I do for you${who()}?`]));
+    say(line('prompt'));
     input.focus();
   }
 
@@ -722,6 +1282,7 @@
   function hide() {
     state.hidden = true;
     closeBubble();
+    if (window.speechSynthesis) speechSynthesis.cancel();
     root.classList.add('clippy-hidden');
   }
 
@@ -797,19 +1358,21 @@
   function appOpened(id, title, el, source) {
     if (!id || openApps.has(id)) return;
     openApps.set(id, { title: title || (apps[id] || {}).name || id, el, source });
+    state.lastApp = id;
     if (el) lookAtElement(el);
     if (state.silent) return;
 
     if (openApps.size >= 4 && tip({
-      text: "That's a lot of windows! Want me to tidy up?",
-      choices: [{ label: 'Close them all', cmd: 'close everything' }, { label: "No, I'm a multitasker", run: () => 'Respect.' }],
+      text: line('many_windows'),
+      choices: [{ label: 'Close them all', cmd: 'close everything' }, { label: "No, I'm a multitasker", run: () => line('multitasker') }],
     }, 'many-windows')) return;
 
-    const app = apps[id];
-    const tips = app && app.tips.length ? app.tips
-      : [{ text: `It looks like you opened ${appName(id)}. Need a hand with anything?`, choices: [{ label: 'What can you do?', cmd: 'help' }] }];
+    // Comment on the first few opens of each app, with a different tip each time.
     const count = (state.openCount[id] = (state.openCount[id] || 0) + 1);
-    if (count <= 2) tip(tips[(count - 1) % tips.length]);
+    if (count > 3) return;
+    const app = apps[id];
+    if (app && app.tips.length) tip(pick(app.tips));
+    else tip({ text: line('opened_unknown', { app: appName(id) }), choices: [{ label: 'What can you do?', cmd: 'help' }] });
   }
 
   const isVisible = el => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
@@ -838,10 +1401,10 @@
 
     if (!seen.has('letter') && /^\s*(dear\s+\w+|to whom it may concern)/i.test(text)) {
       const offered = tip({
-        text: "It looks like you're writing a letter! Would you like help?",
+        text: line('letter_tip'),
         choices: [
-          { label: 'Add a proper sign-off', run: () => { insertText(el, `\n\nYours sincerely,\n${state.name || '[Your name]'}`); return 'Done! Very professional.'; } },
-          { label: 'Just type the letter without help', run: () => "Fine. I'll be right here. Watching." },
+          { label: 'Add a proper sign-off', run: () => { insertText(el, `\n\nYours sincerely,\n${state.name || '[Your name]'}`); return line('signoff_done'); } },
+          { label: 'Just type the letter without help', run: () => line('letter_declined') },
         ],
       });
       if (offered) seen.add('letter');
@@ -849,7 +1412,7 @@
 
     const letters = text.replace(/[^a-z]/gi, '').slice(-15);
     if (!seen.has('caps') && letters.length >= 15 && letters === letters.toUpperCase()) {
-      if (tip('WHY ARE WE SHOUTING? (Psst, Caps Lock might be on.)')) seen.add('caps');
+      if (tip(line('caps'))) seen.add('caps');
     }
   }
 
@@ -885,13 +1448,13 @@
       clicks.push(now);
       if (clicks.length >= 6) {
         clicks = [];
-        tip({ text: 'Whoa, easy on the mouse! Is something not responding?', choices: [{ label: "Yes, it's frozen", run: () => 'Classic. Try closing it and opening it again. It fixed everything in 2004 too.' }] }, 'rage');
+        tip({ text: line('rage'), choices: [{ label: "Yes, it's frozen", run: () => line('rage_reply') }] }, 'rage');
       }
     }, true);
 
     const activity = () => {
       state.lastActivity = Date.now();
-      if (wake()) tip(pick(["Oh! I wasn't asleep. I was defragmenting.", '*yawn* Sorry, I was dreaming about floppy disks.']));
+      if (wake()) tip(line('wake'));
     };
     ['pointermove', 'keydown', 'pointerdown'].forEach(type => document.addEventListener(type, activity, true));
     setInterval(() => { if (Date.now() - state.lastActivity > config.idleAfter) sleep(); }, 5000);
@@ -899,17 +1462,18 @@
     document.addEventListener('pointermove', e => { state.mouse = { x: e.clientX, y: e.clientY }; lookSoon(); });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'F1') { e.preventDefault(); show(); openPrompt(); }
-      else if (e.key === 'Escape' && root.contains(document.activeElement)) closeBubble();
+      if (e.key === 'F1') {
+        e.preventDefault();
+        if (state.hidden) { show(); say(line('back')); input.focus(); } else openPrompt();
+      } else if (e.key === 'Escape' && root.contains(document.activeElement)) closeBubble();
     });
   }
 
   function greeting() {
     const h = new Date().getHours();
-    const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    if (h >= 23 || h < 5) return `It's ${time}${who()}... shouldn't you be asleep? Not that I can talk, I'm at a hackathon.`;
+    if (h >= 23 || h < 5) return line('greeting_late', { time: clock() });
     const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
-    return { text: `Good ${part}${who()}! I'm Clippy. Click me or press F1 whenever you need a hand.`, choices: [{ label: 'What can you do?', cmd: 'help' }] };
+    return { text: line('greeting_' + part), choices: [{ label: 'What can you do?', cmd: 'help' }] };
   }
 
   // -------------------------------------------------------------------- API
@@ -944,8 +1508,10 @@
     appOpened: (id, title) => appOpened(id, title, null, 'event'),
     appClosed: id => openApps.delete(id),
     setChattiness,
+    setVoice,
     get openApps() { return [...openApps.keys()]; },
     // For debugging: what Clippy thinks a sentence means.
     understand: text => classifier.classify(text).slice(0, 3),
+    lineCount: () => Object.values(LINES).reduce((n, l) => n + l.length, 0),
   };
 })();

@@ -154,6 +154,18 @@
   cursor: pointer;
 }
 
+.clippy-ask .clippy-voice {
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+
+.clippy-voice svg { width: 14px; height: 14px; }
+.clippy-voice path { fill: #555; }
+.clippy-voice .clippy-waves { fill: none; stroke: #555; stroke-width: 1.4; stroke-linecap: round; opacity: 0.25; }
+.clippy-voice[aria-pressed="true"] path { fill: #1b5fbf; }
+.clippy-voice[aria-pressed="true"] .clippy-waves { fill: none; stroke: #1b5fbf; opacity: 1; }
+
 .clippy-ask button:hover {
   border-color: #3c7fb1;
   background: linear-gradient(#eaf6fd, #d9f0fc 50%, #bee6fd 51%, #a7d9f5);

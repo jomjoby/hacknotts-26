@@ -62,7 +62,18 @@ For "write a letter", Clippy types into the focused text box, or into a `textare
 - "What's open?", "Close everything", "Change the wallpaper"
 - "Be quiet" / "Talk more" / "Go away" (press **F1** to bring Clippy back)
 
-It also notices you opening apps, typing in caps, rage-clicking and going idle (it falls asleep), and its eyes follow your mouse.
+- Typos are fine: "opne notpad" works
+- "Turn on your voice" (or the speaker button) reads replies aloud using the browser's built-in speech
+
+It also notices you opening apps, typing in caps, rage-clicking and going idle (it falls asleep), and its eyes follow your mouse. It chimes when it pipes up on its own.
+
+## It learns
+
+When Clippy isn't sure, it asks "did you mean...". Picking an answer teaches it that phrase, saved in the browser, so it understands next time.
+
+## Adding voice lines
+
+Everything Clippy says is in the `LINES` table at the top of `clippy.js`. Add lines to any list; `{placeholders}` like `{app}` or `{who}` are filled in automatically. Lines are shuffled so none repeats until the whole list has been used.
 
 ## Other JS API
 
