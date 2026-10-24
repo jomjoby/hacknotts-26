@@ -2,7 +2,14 @@
 
 A Firefox-on-Windows-7 style web browser for the OS: Aero glass window, tabs, back/forward/reload/home, address bar, a fake search engine (Notts Search), bookmarks bar, a green progress bar and a status bar. Double-click the Firefox icon on the desktop to open it.
 
-The "web" is made of HTML files in this repo. Each one is registered with an address, so typing `msn.com` opens `msn/index.html`. Unknown addresses get a retro "Server not found" page, and anything that isn't an address goes to Notts Search.
+What you can visit:
+
+- **Our own sites**: HTML files in this repo, registered with an address, so typing `msn.com` opens `msn/index.html`.
+- **Real websites, as they were in the 2000s**: type any address (or just `google`, `youtube`, `myspace`, `bebo`, `bbc`...) and it opens that site's archived copy from the [Wayback Machine](https://web.archive.org), e.g. Google in 2005. Real sites can't be shown live: almost all of them (Google, Bing, DuckDuckGo...) tell browsers not to display them inside another page, but the Wayback Machine's copies are allowed. The year is the `year` setting (default 2006); famous sites use their best year.
+- **Wikipedia, live**: Wikipedia allows being shown inside other pages, so its articles open for real.
+- **Notts Search**: anything that isn't an address is searched. Results are real, with no account or key: the topic's official site (DuckDuckGo instant answers), `www.<word>.com` if an old copy exists, and Wikipedia articles, plus one joke result.
+
+Real websites need an internet connection and run in a sandbox, so their old scripts can't break out of the browser.
 
 ## Adding it to the OS
 
