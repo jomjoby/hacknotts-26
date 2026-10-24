@@ -7,6 +7,7 @@ import { createStorage } from '../src/core/storage.js';
 import { Stats } from '../src/core/stats.js';
 import { createTranslator, localizeGame } from '../src/i18n/index.js';
 import { EN } from '../src/i18n/en.js';
+import { purble, MOODS, ALL_HATS, BODY_COLORS } from '../src/core/purble.js';
 import { registerGame, validateGame, getRegisteredGames, unregisterGame } from '../src/registry.js';
 import '../src/games/index.js';
 
@@ -97,6 +98,43 @@ describe('storage + stats', () => {
     const adapter = memory();
     new Stats(createStorage(adapter, 'pp')).record('g', 'l', { won: true, stars: 1 });
     assert.equal(new Stats(createStorage(adapter, 'pp')).bestStars('g', 'l'), 1);
+  });
+});
+
+describe('Purble characters', () => {
+  const ids = (svg) => [...svg.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+  it('every mood, hat and colour draws a well-formed picture', () => {
+    for (const mood of MOODS) for (const hat of ALL_HATS) {
+      const svg = purble({ mood, hat, body: BODY_COLORS[(mood.length + hat.length) % BODY_COLORS.length], lanyard: hat.length % 2 === 0 });
+      assert.ok(svg.startsWith('<svg') && svg.trim().endsWith('</svg>'), `${mood}/${hat}`);
+      assert.ok(svg.includes('class="pp-eye"'), 'has eyes that can blink');
+      assert.ok(!svg.includes('undefined') && !svg.includes('NaN'), `${mood}/${hat} has a bad value`);
+    }
+  });
+  it('two characters on one page never share gradient ids', () => {
+    const a = ids(purble({ body: '#b86bd6' })); const b = ids(purble({ body: '#5fd0e0' }));
+    assert.ok(a.length >= 5 && b.length >= 5);
+    assert.deepEqual(a.filter((x) => b.includes(x)), []);
+    assert.equal(new Set(a).size, a.length, 'ids unique within one picture');
+  });
+  it('every url(#...) reference points at a gradient that exists', () => {
+    const svg = purble({ body: '#5fd0e0', antenna: true, suit: 'silver', mood: 'excited' });
+    const defined = new Set(ids(svg));
+    for (const m of svg.matchAll(/url\(#([^)]+)\)/g)) assert.ok(defined.has(m[1]), `missing ${m[1]}`);
+  });
+  it('options: antenna adds a bulb and eyelashes, bust crops to the head, lanyard replaces the star', () => {
+    assert.ok(purble({ antenna: true }).includes('cx="33.5" cy="-8"'));
+    assert.ok(!purble({}).includes('cy="-8"'));
+    assert.ok(purble({ bust: true }).includes('viewBox="2 -14 96 80"'));
+    assert.ok(purble({ bust: true }).length < purble({}).length);
+    assert.ok(purble({ lanyard: true }).includes('#1d4fa8'));
+    assert.ok(!purble({ lanyard: true }).includes('l1.5 3 3.3'));
+  });
+  it('customers are given a look: antenna and suit are decided when they arrive', async () => {
+    const { CakeWorld } = await import('../src/games/comfy-cakes/logic.js');
+    const w = new CakeWorld('advanced', new Rng(5)); for (let i = 0; i < 700; i++) w.update(0.05);
+    assert.ok(w.customers.length >= 2);
+    assert.ok(w.customers.every((c) => typeof c.antenna === 'boolean' && (c.suit === null || c.suit === 'silver')));
   });
 });
 

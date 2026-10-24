@@ -60,6 +60,12 @@
   section('Purble Pairs symbols', SYMBOLS.map((s, i) => cell(symbolSVG(i), s.name, 'tile')));
   section('Purble Shop items', ITEM_COLORS.map((c, i) => `<div class="cell tile"><span class="sh-item" style="--c:${c.hex};--cd:${itemStyle(i)['--cd']};width:50px;height:50px;margin:8px auto">${glyphSVG(c.glyph).replace('<svg', '<svg style="height:auto"')}</span>${c.name}</div>`));
   section('Purble moods', MOODS.map((m, i) => cell(purble({ mood: m, body: BODY_COLORS[i], hat: HATS[i % HATS.length] }), m)));
+  section('Purble variants', [
+    cell(purble({ body: '#5fd0e0', antenna: true, suit: 'silver' }), 'antenna + silver suit'),
+    cell(purble({ body: '#ff7bb5', mood: 'worried' }), 'worried'),
+    cell(purble({ body: '#8fdc6a', hat: 'chef', lanyard: true }), 'lanyard'),
+    cell(purble({ body: '#b86bd6', bust: true }), 'head only'),
+  ]);
   section('Purble hats', HATS.map((hname, i) => cell(purble({ hat: hname, lanyard: i % 2 === 0, body: BODY_COLORS[(i + 2) % BODY_COLORS.length] }), hname)));
 </script>
 </body>

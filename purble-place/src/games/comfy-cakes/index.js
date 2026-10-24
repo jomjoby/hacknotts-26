@@ -336,7 +336,7 @@ export class ComfyCakes extends MiniGame {
       else if (frac < 0.6) mood = 'neutral';
       if (mood !== node.mood) {
         node.mood = mood;
-        node.face.innerHTML = purble({ body: c.body, hat: c.hat, lanyard: c.lanyard, mood, look: 0.5 });
+        node.face.innerHTML = purble({ body: c.body, hat: c.hat, lanyard: c.lanyard, antenna: c.antenna, suit: c.suit, mood, look: 0.5 });
       }
       node.el.classList.toggle('is-leaving', c.state !== 'waiting');
       node.el.classList.toggle('is-happy', c.state === 'happy');

@@ -51,7 +51,7 @@ export class Overlay {
     const backdrop = h('div', { class: 'pp-backdrop' });
     const dlg = h('div', { class: ['pp-dialog', className], role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
       h('div', { class: 'pp-dialog-title' },
-        h('span', { class: 'pp-dialog-icon', html: purble({ mood: 'happy' }) }),
+        h('span', { class: 'pp-dialog-icon', html: purble({ mood: 'happy', bust: true }) }),
         h('span', {}, title),
         cancelable ? h('button', { class: 'pp-dialog-close', type: 'button', 'aria-label': 'Close', onClick: () => handle.cancel() }, '✕') : null),
       h('div', { class: 'pp-dialog-body' },

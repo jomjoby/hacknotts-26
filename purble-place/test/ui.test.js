@@ -244,6 +244,19 @@ describe('Campus scene: the three games are rooms of one building', () => {
     assert.equal(t.app.view, 'game');
     t.done();
   });
+  it('Atrium Cakes is named across the upper middle of the Atrium; the other two names sit underneath', async () => {
+    const { CAMPUS_SPOTS } = await import('../src/shell/campus.js');
+    const a = CAMPUS_SPOTS['comfy-cakes'];
+    assert.ok(a.label && a.label.y > a.y && a.label.y < a.y + a.h * 0.4, 'label is in the upper part of the Atrium');
+    assert.equal(CAMPUS_SPOTS['purble-shop'].label, undefined);
+    assert.equal(CAMPUS_SPOTS['purble-pairs'].label, undefined);
+    const t = await boot();
+    const [shop, cakes, pairs] = ['purble-shop', 'comfy-cakes', 'purble-pairs'].map((id) => $$(t.app, '.pp-building.is-spot').find((b) => b.getAttribute('aria-label') === t.app.listGames().find((g) => g.id === id).title));
+    const nameTop = (b) => b.offsetTop + b.querySelector('.pp-building-name').offsetTop;
+    assert.ok(nameTop(cakes) < 300, `Atrium name is high on the building (${nameTop(cakes)})`);
+    assert.ok(nameTop(shop) >= 400 && nameTop(pairs) >= 400, 'the other names are underneath');
+    t.done();
+  });
   it('the scene has no invented extras (no Aspire tower, no ducks)', async () => {
     const { CAMPUS_BACKDROP } = await import('../src/shell/campus.js');
     assert.ok(!/duck|aspire/i.test(CAMPUS_BACKDROP));

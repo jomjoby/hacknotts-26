@@ -54,7 +54,7 @@ export class PurbleShop extends MiniGame {
   say(text, mood) {
     this.bubble.textContent = text;
     if (mood) this.mood = mood;
-    this.mascot.innerHTML = purble({ body: '#4fb8c9', hat: 'cap', lanyard: true, mood: this.mood, look: -0.6 });
+    this.mascot.innerHTML = purble({ body: '#5fd0e0', hat: 'cap', lanyard: true, mood: this.mood, look: -0.6 });
   }
 
   // ───────────────────────────── rendering ─────────────────────────────
@@ -89,7 +89,7 @@ export class PurbleShop extends MiniGame {
     this.btnClear.disabled = m.over || m.current.every((c) => c === null);
     this.btnHint.disabled = m.over || m.hintsLeft <= 0;
     this.btnHint.textContent = this.t('shop.hint', { n: m.hintsLeft });
-    this.mascot.innerHTML = purble({ body: '#4fb8c9', hat: 'cap', lanyard: true, mood: this.mood, look: -0.6 });
+    this.mascot.innerHTML = purble({ body: '#5fd0e0', hat: 'cap', lanyard: true, mood: this.mood, look: -0.6 });
   }
 
   renderSecret() {

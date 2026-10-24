@@ -47,11 +47,11 @@ export class Hub {
     this.el.innerHTML = this.scene.backdrop;
     this.el.append(
       h('div', { class: 'pp-hub-title' },
-        h('div', { class: 'pp-hub-mascot is-left', html: purble({ body: '#a45fd8', hat: 'gradcap', lanyard: true, mood: 'excited' }) }),
+        h('div', { class: 'pp-hub-mascot is-left', html: purble({ body: '#b86bd6', hat: 'gradcap', lanyard: true, mood: 'excited' }) }),
         h('div', { class: 'pp-hub-head' },
           h('h1', { class: 'pp-hub-logo', 'aria-label': 'Purble Place', html: nameSVG('Purble Place', ['#c77dff', '#6d4aff'], { size: 64, width: 420, height: 88, logo: true, reflect: false }) }),
           h('div', { class: 'pp-hub-ribbon' }, this.t('hub.ribbon'))),
-        h('div', { class: 'pp-hub-mascot is-right', html: purble({ body: '#f08a4b', hat: 'headphones', lanyard: true, mood: 'happy', look: -1 }) })),
+        h('div', { class: 'pp-hub-mascot is-right', html: purble({ body: '#5fd0e0', antenna: true, suit: 'silver', lanyard: true, mood: 'happy', look: -1 }) })),
       this.buildings(games));
   }
 
@@ -68,17 +68,20 @@ export class Hub {
     const nameSize = 25;
     const nameH = Math.round(nameSize * 1.8);
     games.forEach((def, i) => {
-      const { x, y, w, h: zoneH } = spots[i];
+      const { x, y, w, h: zoneH, label } = spots[i];
       const cx = x + w / 2;
+      // a spot can letter its name inside the picture (label.y = top of the lettering) instead of underneath
+      const inside = label && label.y !== undefined;
+      const nameTop = inside ? label.y - y : zoneH - 2;
       const colors = def.hub?.colors || [shade(def.hub?.accent || '#8e6bd8', 0.2), shade(def.hub?.accent || '#8e6bd8', -0.1)];
       layer.append(h('button', {
         class: 'pp-building is-spot', type: 'button',
-        style: { left: `${Math.round(cx - nameW / 2)}px`, top: `${y}px`, width: `${nameW}px`, height: `${zoneH + nameH}px` },
+        style: { left: `${Math.round(cx - nameW / 2)}px`, top: `${y}px`, width: `${nameW}px`, height: `${inside ? zoneH : zoneH + nameH}px` },
         'aria-label': def.title,
         onClick: () => { this.sound.play('select'); this.onOpen(def.id); },
       },
       h('span', { class: 'pp-spot-zone', style: { left: `${Math.round((nameW - w) / 2)}px`, width: `${w}px`, height: `${zoneH}px` } }),
-      h('span', { class: 'pp-building-name', style: { top: `${zoneH - 2}px` }, html: nameSVG(def.title, colors, { size: nameSize, width: nameW, height: nameSize * 1.5, box: 1.2 }) })));
+      h('span', { class: 'pp-building-name', style: { top: `${nameTop}px` }, html: nameSVG(def.title, colors, { size: nameSize, width: nameW, height: nameSize * 1.5, box: 1.2 }) })));
     });
     return layer;
   }

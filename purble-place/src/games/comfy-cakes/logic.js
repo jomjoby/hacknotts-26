@@ -399,7 +399,7 @@ export class CakeWorld extends Emitter {
       id: this._id++, seat, state: 'waiting', age: 0, leave: 0,
       order: generateOrder(this.cfg, this.rng),
       patience: this.cfg.patience, maxPatience: this.cfg.patience,
-      body: this.rng.pick(BODY_COLORS), hat: this.rng.pick(HATS), lanyard: this.rng.chance(0.7),
+      body: this.rng.pick(BODY_COLORS), hat: this.rng.pick(HATS), lanyard: this.rng.chance(0.7), antenna: this.rng.chance(0.3), suit: this.rng.chance(0.35) ? 'silver' : null,
     };
     this.customers.push(customer);
     this.spawnTimer = this.cfg.spawnGap * this.rng.float(0.8, 1.2);
