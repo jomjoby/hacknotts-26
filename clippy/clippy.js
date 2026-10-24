@@ -370,7 +370,44 @@
       "I'm stumped. Want to see what I can do?",
       "No idea, I'm afraid. But I'm great at maths and timers!",
       "My wire's in a twist. Could you say that differently?",
+      'That one\'s beyond my classic brain. Type "settings" to give me an AI brain!',
     ],
+    react: [
+      'I know, right?',
+      "Wild, isn't it?",
+      'Tell me about it.',
+      "Right?! I'm shook. Well, I'm bent.",
+      'Mad, innit.',
+      "I'm full of surprises.",
+      'Crazy times. Anything I can do?',
+      "Haha! Glad you're enjoying yourself.",
+      'Same, honestly.',
+      "I'll take that as a compliment.",
+      'Mhm! What next?',
+      "That's the spirit!",
+    ],
+    brain_menu: ["Which brain should I use? I'm currently on {brain}.", 'Pick my brain! (Currently: {brain})', 'Brain transplant time? Right now I use {brain}.'],
+    brain_classic: ['Classic brain it is. Fast, offline, and only slightly confused.', 'Back to my trusty classic brain!'],
+    brain_local_loading: [
+      "Downloading my AI brain! It's about 1GB the first time, then it's saved. I'll keep answering while it loads.",
+      'Upgrade time! Fetching my AI brain (about 1GB, only the first time). Chat away meanwhile.',
+    ],
+    brain_local_ready: ['My AI brain is ready! Talk to me about anything.', 'Brain installed! I feel... smarter. Try me.', 'AI brain online. Go on, say something weird.'],
+    brain_no_webgpu: [
+      "This browser can't run my built-in AI (it needs WebGPU, so try Chrome or Edge). Sticking with my classic brain.",
+      'No WebGPU here, so no built-in AI brain, sorry! Chrome or Edge should work. Classic brain for now.',
+    ],
+    brain_error: ['My AI brain had a wobble ({error}). Using my classic brain for now.'],
+    brain_ask_key: [
+      'Paste your Anthropic API key into the box below and press Ask. It only stays in this browser. Type "cancel" to stop.',
+      'OK! Paste the API key below and press Ask. It never leaves this browser except to talk to Claude. "cancel" to stop.',
+    ],
+    brain_claude_ready: ["Connected to Claude! I'm much smarter now. Mostly.", "Claude brain plugged in! Ask me anything."],
+    brain_key_failed: ["That API key didn't work ({error}). Still using {brain}.", "Hmm, that key was rejected ({error}). Sticking with {brain}."],
+    key_forgotten: ['API key forgotten. What key? I never saw a key.', 'Done, the key is gone from this browser.'],
+    ai_still_loading: ['(My AI brain is still downloading: {percent}%.)', '(AI brain loading: {percent}%. Classic brain answering for now.)'],
+    ai_hiccup: ['(My AI brain hiccuped, so that was my classic brain talking.)'],
+    refusal: ["Ooh, that's not something I can help with. Try something else?"],
     wake: [
       "Oh! I wasn't asleep. I was defragmenting.",
       '*yawn* Sorry, I was dreaming about floppy disks.',
@@ -433,6 +470,11 @@
     notes: store.get('notes', []),
     chattiness: store.get('chattiness', 'normal'), // 'normal' | 'quiet'
     voice: store.get('voice', false),
+    brain: store.get('brain', null), // 'classic' | 'local' | 'claude' (set in init)
+    apiKey: store.get('apiKey', ''),
+    awaiting: null, // 'apikey' while the next thing typed is an API key
+    history: [], // recent { role, content } turns, so the AI knows what was said
+    requestId: 0,
     lastApp: null, // the app most recently opened or talked about, for "close it"
     hidden: false,
     sleeping: false,
@@ -449,7 +491,7 @@
     lookAt: null,
   };
 
-  let root, bubble, textEl, youEl, choicesEl, input, charEl, voiceButton, eyes = [];
+  let root, bubble, textEl, youEl, choicesEl, input, charEl, voiceButton, progressEl, eyes = [];
 
   // Shuffle bag: every item in a list is used once before any of them repeats,
   // and the same item never comes up twice in a row.
@@ -662,7 +704,9 @@
 
   const TRAINING = {
     greet: ['hi', 'hello', 'hey', 'hiya', 'yo', 'good morning', 'good afternoon', 'good evening', 'sup', 'whats up', 'hey clippy', 'hello there'],
-    help: ['help', 'what can you do', 'what do you do', 'how do you work', 'show me what you can do', 'commands', 'i need help', 'options', 'what are your features', 'how do i use you'],
+    help: ['help', 'what can you do', 'what do you do', 'how do you work', 'show me what you can do', 'commands', 'i need help', 'options', 'what are your features', 'how do i use you', 'do something', 'can you do smth', 'do smth', 'what else can you do', 'anything else'],
+    react: ['damn', 'thats crazy', 'wow', 'lol', 'haha', 'omg', 'no way', 'cool', 'nice', 'interesting', 'wtf', 'bruh', 'fair enough', 'true', 'yeah', 'yh', 'mad', 'crazy', 'unreal', 'sick', 'lmao', 'oh', 'hmm', 'really', 'seriously', 'wild', 'thats mad', 'oh wow', 'thats insane'],
+    settings: ['settings', 'change your brain', 'use ai', 'switch brain', 'turn on ai', 'use the ai', 'make you smarter', 'ai mode', 'change mode', 'use an api key', 'brain settings', 'classic mode', 'turn off ai', 'use claude', 'built in ai', 'forget my api key'],
     who: ['who are you', 'what are you', 'whats your name', 'are you a robot', 'are you an ai', 'tell me about yourself', 'are you alive', 'how do you think'],
     open_app: ['open msn', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
     close_app: ['close msn', 'close notepad', 'quit the browser', 'exit messenger', 'shut notepad', 'kill the app', 'close this window', 'get rid of this window', 'close everything', 'close all windows', 'close it', 'close the program', 'shut it down'],
@@ -691,7 +735,7 @@
     timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get an MSN status',
     wallpaper: 'Change the wallpaper', letter: 'Write a letter', notes: 'Show my notes', name_get: 'Say my name',
     quiet: 'Fewer tips', chatty: 'More tips', hide: 'Hide Clippy', thanks: 'Say thanks',
-    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud',
+    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting', settings: 'Change your brain',
   };
 
   const classifier = new IntentClassifier();
@@ -955,7 +999,18 @@
     chatty: () => { setChattiness('normal'); return line('chatty'); },
     hide: () => { setTimeout(hide, 1500); return line('hide'); },
     thanks: () => line('thanks'),
+    react: () => line('react'),
+    settings: text => {
+      if (/\bforget\b/i.test(text)) return forgetKey();
+      if (/\b(classic|off)\b/i.test(text)) return setBrain('classic');
+      if (/\b(claude|api|key)\b/i.test(text)) return setBrain('claude');
+      if (/\b(built|local)\b/i.test(text)) return setBrain('local');
+      return brainMenu();
+    },
   };
+
+  // Small talk the AI does better than canned lines, when an AI brain is ready.
+  const CHAT_INTENTS = new Set(['greet', 'react', 'thanks', 'who', 'bored']);
 
   // Rules checked before the classifier, for things with a clear shape.
   const RULES = [
@@ -974,22 +1029,29 @@
     const [top, second] = classifier.classify(text);
     const clearWinner = top && second && top.confidence >= 1.5 * second.confidence;
     const onlyFit = top && top.coverage === 1 && (!second || second.coverage < 0.5);
-    if (top && top.coverage >= 0.6 && (!second || clearWinner || onlyFit)) return () => INTENTS[top.intent](text);
+    if (top && top.coverage >= 0.6 && (!second || clearWinner || onlyFit)) {
+      const run = () => INTENTS[top.intent](text);
+      run.intent = top.intent;
+      return run;
+    }
     return null;
   }
 
   const asReply = r => (typeof r === 'string' ? { text: r } : r);
+  const withNote = (reply, note) => { const r = asReply(reply); return { ...r, text: r.text + '\n' + note }; };
 
+  // Returns a reply, or a Promise of one when the AI brain is answering.
   function respond(text) {
     if (state.choices.length && /^(y|yes|yeah|yep|sure|ok|okay|go on)\b/i.test(text)) return runChoice(state.choices[0]);
     if (state.choices.length && /^(no|nah|nope)\b/i.test(text)) return line('no');
 
+    // Clear commands are handled directly: instant and reliable, whatever the brain.
     const action = understand(text);
-    if (action) return action();
+    if (action && !(CHAT_INTENTS.has(action.intent) && aiReady())) return action();
 
     // "open msn and tell me a joke": do each part, but only if every part makes sense.
     const parts = text.split(/\s*,?\s+(?:and then|and|then)\s+/i);
-    if (parts.length > 1) {
+    if (!action && parts.length > 1) {
       const actions = parts.map(understand);
       if (actions.every(Boolean)) {
         const replies = actions.map(run => run()).filter(r => r != null).map(asReply);
@@ -997,8 +1059,20 @@
       }
     }
 
+    const classic = () => (action ? action() : notUnderstood(text));
+    if (aiReady()) {
+      return askAI(text).catch(err => {
+        console.warn('Clippy AI error:', err);
+        return withNote(classic(), line('ai_hiccup'));
+      });
+    }
+    if (state.brain === 'local' && ai.loading) return withNote(classic(), line('ai_still_loading', { percent: Math.round(ai.progress * 100) }));
+    return classic();
+  }
+
+  function notUnderstood(text) {
     const [top, second] = classifier.classify(text);
-    const guesses = [top, second].filter(g => g && g.coverage > 0);
+    const guesses = [top, second].filter(g => g && g.coverage >= 0.5);
     if (guesses.length) {
       return {
         text: line('unsure'),
@@ -1025,6 +1099,204 @@
     classifier.learn(intent, text);
     learned.push({ intent, text });
     store.set('learned', learned.slice(-200));
+  }
+
+  // ----------------------------------------------------------------- brains
+  //
+  // 'classic': the classifier above only. Instant and offline.
+  // 'local':   a small open AI model (Llama 3.2 1B), downloaded once (~1GB, then
+  //            cached by the browser) and run on this computer with WebLLM.
+  //            No account or key. Needs WebGPU (Chrome or Edge).
+  // 'claude':  Claude via the Anthropic API, with a key pasted into Clippy.
+
+  const WEBLLM_URL = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm';
+  const CLAUDE_MODEL = 'claude-opus-5-5';
+  const BRAIN_NAMES = { classic: 'my classic brain', local: 'built-in AI', claude: 'Claude' };
+
+  const ai = { engine: null, loading: null, progress: 0 };
+
+  const aiReady = () => (state.brain === 'local' && !!ai.engine) || (state.brain === 'claude' && !!state.apiKey);
+
+  function loadLocalModel() {
+    if (ai.loading) return ai.loading;
+    ai.loading = (async () => {
+      const adapter = navigator.gpu && await navigator.gpu.requestAdapter();
+      if (!adapter) throw new Error('no-webgpu');
+      const model = adapter.features.has('shader-f16') ? 'Llama-3.2-1B-Instruct-q4f16_1-MLC' : 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
+      const webllm = await import(WEBLLM_URL);
+      // The model runs in a worker so the desktop doesn't freeze while it thinks.
+      const workerCode = `import { WebWorkerMLCEngineHandler } from '${WEBLLM_URL}';
+        const handler = new WebWorkerMLCEngineHandler();
+        self.onmessage = msg => handler.onmessage(msg);`;
+      const worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' })), { type: 'module' });
+      ai.engine = await webllm.CreateWebWorkerMLCEngine(worker, model, {
+        initProgressCallback: report => {
+          ai.progress = report.progress;
+          progressEl.hidden = false;
+          progressEl.textContent = `AI brain: ${Math.round(report.progress * 100)}% loaded`;
+        },
+      });
+      return ai.engine;
+    })();
+    ai.loading.catch(() => { ai.loading = null; });
+    return ai.loading;
+  }
+
+  function startLocal(announce) {
+    progressEl.hidden = false;
+    progressEl.textContent = 'AI brain: starting...';
+    loadLocalModel()
+      .then(() => {
+        progressEl.hidden = true;
+        if (announce && state.brain === 'local') say(line('brain_local_ready'), { autoHide: 10000 });
+      })
+      .catch(err => {
+        progressEl.hidden = true;
+        if (state.brain !== 'local') return;
+        state.brain = 'classic';
+        store.set('brain', 'classic');
+        say(err.message === 'no-webgpu' ? line('brain_no_webgpu') : line('brain_error', { error: err.message }));
+      });
+  }
+
+  function setBrain(brain) {
+    if (brain === 'claude' && !state.apiKey) {
+      state.awaiting = 'apikey';
+      input.type = 'password';
+      input.placeholder = 'Paste your API key...';
+      setTimeout(() => input.focus(), 0);
+      return line('brain_ask_key');
+    }
+    if (brain === 'local' && !ai.engine) {
+      return (async () => {
+        const adapter = navigator.gpu && await navigator.gpu.requestAdapter().catch(() => null);
+        if (!adapter) return line('brain_no_webgpu');
+        state.brain = 'local';
+        store.set('brain', 'local');
+        startLocal(true);
+        return line('brain_local_loading');
+      })();
+    }
+    state.brain = brain;
+    store.set('brain', brain);
+    return line({ local: 'brain_local_ready', claude: 'brain_claude_ready', classic: 'brain_classic' }[brain]);
+  }
+
+  function brainMenu() {
+    const choices = [
+      { label: 'Classic (instant, works offline)', run: () => setBrain('classic') },
+      { label: 'Built-in AI (free, no account, ~1GB download)', run: () => setBrain('local') },
+      { label: 'Claude (needs an API key)', run: () => setBrain('claude') },
+    ];
+    if (state.apiKey) choices.push({ label: 'Forget my API key', run: forgetKey });
+    return { text: line('brain_menu', { brain: BRAIN_NAMES[state.brain] }), choices };
+  }
+
+  function forgetKey() {
+    state.apiKey = '';
+    store.set('apiKey', '');
+    if (state.brain === 'claude') { state.brain = 'classic'; store.set('brain', 'classic'); }
+    return line('key_forgotten');
+  }
+
+  function stopAwaitingKey() {
+    state.awaiting = null;
+    input.type = 'text';
+    input.placeholder = 'Ask me something...';
+  }
+
+  // The next thing typed after choosing Claude is the key: check it works before switching.
+  function receiveKey(key) {
+    stopAwaitingKey();
+    if (/^cancel$/i.test(key)) { say(line('no')); return; }
+    showThinking('••••••••');
+    askClaude([{ role: 'user', content: 'Say hi in five words or fewer.' }], key)
+      .then(() => {
+        state.apiKey = key;
+        store.set('apiKey', key);
+        say(setBrain('claude'));
+      })
+      .catch(err => say(line('brain_key_failed', { error: err.message, brain: BRAIN_NAMES[state.brain] })));
+  }
+
+  function systemPrompt() {
+    const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const open = openApps.size ? list([...openApps.keys()].map(appName)) : 'nothing';
+    const commands = [
+      ...Object.values(apps).flatMap(a => [`open ${a.name}`, `close ${a.name}`]),
+      'close everything', 'change the wallpaper', 'give me an msn status', 'write a letter',
+      'remind me in <number> minutes to <task>', 'tell me a joke',
+    ];
+    return [
+      'You are Clippy, a cheerful, slightly over-eager talking paperclip who lives on a retro Windows 7-style desktop built for the HackNotts 2026 hackathon (theme: the 2000s).',
+      'Reply in one or two short sentences, under 40 words. Plain text only: no markdown, lists or emojis. British English. Be playful, warm and helpful; 2000s references are welcome.',
+      `It is ${clock()} on ${date}. Open windows: ${open}.${state.name ? ` The user's name is ${state.name}.` : ''}`,
+      'You can control the desktop. Only when the user asks for one of these, put the matching command on its own line at the end of your reply, written exactly like this:',
+      ...commands.map(c => `[do: ${c}]`),
+      "You can't browse the web or see the screen beyond what is listed here, so don't pretend to.",
+    ].join('\n');
+  }
+
+  async function askClaude(messages, key = state.apiKey) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2026-10-21',
+        'anthropic-beta': 'server-side-fallback-2026-07-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 16000,
+        output_config: { effort: 'low' },
+        fallbacks: 'default',
+        system: systemPrompt(),
+        messages,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data.error && data.error.message) || `HTTP ${res.status}`);
+    if (data.stop_reason === 'refusal') return line('refusal');
+    return data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  }
+
+  async function askLocal(messages) {
+    const result = await ai.engine.chat.completions.create({
+      messages: [{ role: 'system', content: systemPrompt() }, ...messages],
+      max_tokens: 120,
+      temperature: 0.8,
+    });
+    return (result.choices[0].message.content || '').trim();
+  }
+
+  async function askAI(text) {
+    const messages = [...state.history.slice(-12), { role: 'user', content: text }];
+    const reply = state.brain === 'claude' ? await askClaude(messages) : await askLocal(messages);
+    return runCommands(reply);
+  }
+
+  // Carry out any [do: ...] commands the AI asked for, using the classic brain's actions.
+  function runCommands(reply) {
+    const results = [];
+    const text = reply.replace(/\[do:\s*([^\]]+)\]/gi, (_, cmd) => {
+      const action = understand(cmd.trim());
+      if (action) results.push(asReply(action()));
+      return '';
+    }).trim();
+    // Keep an action's own text when it carries something the AI can't know (like a generated status).
+    const extra = results.filter(r => r.choices && r.choices.length).map(r => r.text);
+    return {
+      text: [text || results.map(r => r.text).join('\n'), ...extra].filter(Boolean).join('\n') || '...',
+      choices: results.flatMap(r => r.choices || []),
+    };
+  }
+
+  function remember(userText, reply) {
+    if (reply == null) return;
+    state.history.push({ role: 'user', content: userText }, { role: 'assistant', content: asReply(reply).text });
+    if (state.history.length > 24) state.history.splice(0, state.history.length - 24);
   }
 
   // ------------------------------------------------------------ sound & voice
@@ -1081,9 +1353,13 @@
       <div class="clippy-you" hidden></div>
       <div class="clippy-text" aria-live="polite"></div>
       <div class="clippy-choices"></div>
+      <div class="clippy-progress" hidden></div>
       <form class="clippy-ask">
         <button class="clippy-voice" type="button" aria-pressed="false" aria-label="Read replies aloud" title="Read replies aloud">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="clippy-waves" d="M11 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9"/></svg>
+        </button>
+        <button class="clippy-settings" type="button" aria-label="Choose Clippy's brain" title="Choose Clippy's brain">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><circle class="clippy-cog" cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2"/></svg>
         </button>
         <input type="text" placeholder="Ask me something..." aria-label="Ask Clippy" autocomplete="off">
         <button type="submit">Ask</button>
@@ -1118,6 +1394,8 @@
     charEl = root.querySelector('.clippy-char');
     voiceButton = root.querySelector('.clippy-voice');
     voiceButton.setAttribute('aria-pressed', String(state.voice));
+    progressEl = root.querySelector('.clippy-progress');
+    root.querySelector('.clippy-settings').addEventListener('click', () => say(brainMenu()));
     eyes = [...root.querySelectorAll('.clippy-eye')].map(g => {
       const pupil = g.querySelector('.clippy-pupil');
       return { white: g.querySelector('.clippy-eye-white'), pupil, cx: +pupil.getAttribute('cx'), cy: +pupil.getAttribute('cy') };
@@ -1229,18 +1507,35 @@
     setMood('think');
   }
 
+  // Show "...", work out the reply (which may come from the AI), then say it.
+  // A newer message cancels an older one that's still waiting.
+  function reply(you, produce) {
+    state.lastUserChat = Date.now();
+    showThinking(you);
+    const id = ++state.requestId;
+    const started = Date.now();
+    Promise.resolve()
+      .then(produce)
+      .catch(err => { console.warn('Clippy error:', err); return line('fallback'); })
+      .then(result => {
+        const pause = Math.max(0, 350 + Math.random() * 400 - (Date.now() - started));
+        setTimeout(() => {
+          if (id !== state.requestId) return;
+          remember(you, result);
+          say(result, { you });
+        }, pause);
+      });
+  }
+
   function handleInput(raw) {
     const text = raw.trim();
     if (!text) return;
-    state.lastUserChat = Date.now();
-    showThinking(text);
-    setTimeout(() => say(respond(text), { you: text }), 350 + Math.random() * 400);
+    if (state.awaiting === 'apikey') { receiveKey(text); return; }
+    reply(text, () => respond(text));
   }
 
   function handleChoice(choice) {
-    state.lastUserChat = Date.now();
-    showThinking(choice.label);
-    setTimeout(() => say(runChoice(choice), { you: choice.label }), 300);
+    reply(choice.label, () => runChoice(choice));
   }
 
   // Unsolicited comments go through here so Clippy is helpful, not unbearable.
@@ -1258,6 +1553,7 @@
   }
 
   function closeBubble() {
+    if (state.awaiting) stopAwaitingKey();
     clearTimeout(state.autoHideTimer);
     clearInterval(state.typing);
     state.typingDone = null;
@@ -1486,13 +1782,17 @@
     if (root) return window.Clippy;
     Object.assign(config, options);
     (options.apps || []).forEach(registerApp);
+    // The brain the user last picked wins; otherwise options.brain ('classic' or 'local').
+    state.brain = state.brain || options.brain || 'classic';
+    if (state.brain === 'claude' && !state.apiKey) state.brain = 'classic';
     build();
+    if (state.brain === 'local') startLocal(false);
     watch();
     scheduleBlink();
     state.silent = true; // apps already on screen at startup don't get a tip
     syncDom();
     state.silent = false;
-    setTimeout(() => say(greeting(), { autoHide: 10000 }), 600);
+    setTimeout(() => { if (!state.lastUserChat) say(greeting(), { autoHide: 10000 }); }, 600);
     return window.Clippy;
   }
 
@@ -1509,6 +1809,8 @@
     appClosed: id => openApps.delete(id),
     setChattiness,
     setVoice,
+    setBrain: brain => Promise.resolve(setBrain(brain)).then(say),
+    get brain() { return state.brain; },
     get openApps() { return [...openApps.keys()]; },
     // For debugging: what Clippy thinks a sentence means.
     understand: text => classifier.classify(text).slice(0, 3),
