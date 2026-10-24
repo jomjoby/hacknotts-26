@@ -286,6 +286,8 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
 // The game is built from JavaScript modules. Some browsers (Chrome) won't load modules from a
 // page opened as a file, so then we use addons/purble-place-bundle.js, the same game as one plain
 // script (rebuild it with addons/build-purble-bundle.sh after changing the game).
+// A page opened as a file can't read the game's sound files either, so then addons/purble-place-sounds.js
+// carries them (rebuild it with: python addons/build-purble-sounds.py).
 
 let purble = null;
 let purbleWindow = null;
@@ -327,6 +329,8 @@ async function openPurblePlace() {
     } catch (err) {
         try {
             await loadScript('addons/purble-place-bundle.js');
+            // a page opened as a file can't read the sound files, so they come packed in a script
+            if (location.protocol === 'file:') await loadScript('addons/purble-place-sounds.js');
             mount = window.PurblePlaceBundle.mount;
         } catch {
             console.error(err);

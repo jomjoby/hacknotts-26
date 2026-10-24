@@ -113,6 +113,27 @@ describe('Sound – playback', () => {
     assert.equal(s.buffers.size, 0);
     s.destroy();
   });
+  it('sounds packed into the page are used when the files cannot be fetched (a page opened from disk)', async () => {
+    const bytes = new Uint8Array(await (await fetch(new URL('PURBLES_CAKEPANBUTTON.wav', BASE))).arrayBuffer());
+    let bin = '';
+    for (const b of bytes) bin += String.fromCharCode(b);
+    globalThis.PURBLE_PLACE_SOUNDS = { 'PURBLES_CAKEPANBUTTON.wav': btoa(bin) };
+    try {
+      const s = new Sound({ base: `${BASE}nowhere/` });          // nothing can be fetched from here
+      await s.preload(['cake-pan', 'chef-exit']);
+      assert.equal(s.buffers.size, 1, 'the packed one loads; the other has nowhere to come from');
+      assert.ok(s.buffers.get('cake-pan').duration > 0.9);
+      s.destroy();
+    } finally {
+      delete globalThis.PURBLE_PLACE_SOUNDS;
+    }
+  });
+  it('the packed sounds script, where the host has one, carries every recording', async () => {
+    const res = await fetch(new URL('../../purble-place-sounds.js', import.meta.url));
+    if (!res.ok) return;                                          // this layout has no packed script
+    const text = await res.text();
+    for (const s of Object.values(SAMPLES)) assert.ok(text.includes(`"${s.file}":`), `${s.file} is missing from purble-place-sounds.js`);
+  });
   it('without a sound folder nothing is fetched and nothing plays', async () => {
     const s = soundWith();
     await s.preload();

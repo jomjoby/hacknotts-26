@@ -1,5 +1,7 @@
 // Sound effects: the original Purble Place recordings (see samples.js and assets/sounds/).
 // A name with no recording makes no sound.
+// A page opened as a file (file://) cannot fetch them, so the host can pack them into
+// window.PURBLE_PLACE_SOUNDS ({ 'FILE.wav': base64 }) and they are read from there instead.
 
 import { SAMPLES, ALIASES, SILENT } from './samples.js';
 
@@ -66,14 +68,22 @@ export class Sound {
   }
 
   async _fetch(file) {
-    const res = await fetch(new URL(file, this.base));
-    if (!res.ok) return null;
+    const data = await this._bytes(file);
+    if (!data) return null;
     // An offline context decodes without needing a click first, so the sound is ready before the first one is played.
     if (!this._decoder) {
       const Offline = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
       this._decoder = Offline ? new Offline(1, 1, 44100) : this._context();
     }
-    return this._decoder ? this._decoder.decodeAudioData(await res.arrayBuffer()) : null;
+    return this._decoder ? this._decoder.decodeAudioData(data) : null;
+  }
+
+  /** A file's bytes: the copy packed into the page if there is one, otherwise fetched from the sound folder. */
+  async _bytes(file) {
+    const packed = globalThis.PURBLE_PLACE_SOUNDS?.[file];
+    if (packed) return Uint8Array.from(atob(packed), (c) => c.charCodeAt(0)).buffer;
+    const res = await fetch(new URL(file, this.base));
+    return res.ok ? res.arrayBuffer() : null;
   }
 
   play(name) {

@@ -3315,13 +3315,19 @@ var PurblePlaceBundle = (() => {
       return job;
     }
     async _fetch(file) {
-      const res = await fetch(new URL(file, this.base));
-      if (!res.ok) return null;
+      const data = await this._bytes(file);
+      if (!data) return null;
       if (!this._decoder) {
         const Offline = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
         this._decoder = Offline ? new Offline(1, 1, 44100) : this._context();
       }
-      return this._decoder ? this._decoder.decodeAudioData(await res.arrayBuffer()) : null;
+      return this._decoder ? this._decoder.decodeAudioData(data) : null;
+    }
+    async _bytes(file) {
+      const packed = globalThis.PURBLE_PLACE_SOUNDS?.[file];
+      if (packed) return Uint8Array.from(atob(packed), (c) => c.charCodeAt(0)).buffer;
+      const res = await fetch(new URL(file, this.base));
+      return res.ok ? res.arrayBuffer() : null;
     }
     play(name) {
       if (this.muted) return;
