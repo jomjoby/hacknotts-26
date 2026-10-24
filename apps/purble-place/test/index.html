@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Purble Place – tests</title>
+<style>body { margin: 0; font-family: Consolas, monospace; background: #fff; color: #222; }</style>
+</head>
+<body>
+<script type="module">
+  // Serve the project root with any static server (python -m http.server) and open /test/index.html.
+  import { run } from './harness.js';
+  import './core.test.js';
+  import './pairs.test.js';
+  import './shop.test.js';
+  import './cakes.test.js';
+  import './ui.test.js';
+  await run();
+</script>
+</body>
+</html>
