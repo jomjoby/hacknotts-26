@@ -33,6 +33,12 @@
     h1 { margin: 0 0 8px; font: bold 20px Arial, sans-serif; }
     .player { position: relative; width: 100%; max-width: 640px; aspect-ratio: 4 / 3; background: #000; border: 1px solid #000; }
     .player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .offline { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px;
+      padding: 24px; color: #fff; background: radial-gradient(circle at 50% 40%, #333, #000); font-size: 13px; line-height: 1.5; }
+    .offline b { font-size: 16px; }
+    .offline button { align-self: flex-start; padding: 6px 14px; border: 1px solid #900; border-radius: 3px; cursor: pointer;
+      background: linear-gradient(#ff5a4f, #cc1100); color: #fff; font: bold 13px Arial, sans-serif; }
+    .offline code { color: #fc6; }
     .rate { display: flex; gap: 16px; margin-top: 8px; padding: 8px; border: 1px solid #ccc; background: #f3f3f3; }
     .stars { color: #e00; font-size: 16px; letter-spacing: 1px; }
     .info { padding: 8px; border: 1px solid #ccc; background: #fff; line-height: 1.5; }
@@ -97,6 +103,22 @@
       return m && m[1];
     }
 
+    // YouTube's player refuses to play on pages opened as a file (it needs to know which website
+    // it's on, and file pages don't say), so explain that instead of showing YouTube's "Error 153".
+    function playerFor(id) {
+      if (location.protocol === 'file:') {
+        return `<div class="offline">
+          <b>This video can't play here</b>
+          <span>YouTube only plays videos when the OS is running from a local server, not opened as a file.
+            Start it with <code>start.sh</code> (or <code>start.bat</code> on Windows) in the project folder.</span>
+          <button type="button" onclick="window.open('https://www.youtube.com/watch?v=${esc(id)}', '_blank')">Watch on YouTube</button>
+        </div>`;
+      }
+      return `<iframe src="https://www.youtube-nocookie.com/embed/${esc(id)}?autoplay=1&rel=0"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin" title="Video player"></iframe>`;
+    }
+
     function card(v) {
       return `<div class="card" data-id="${esc(v.id)}">
         <img class="thumb" src="${thumb(v.id)}" alt="" loading="lazy">
@@ -122,9 +144,7 @@
       main.innerHTML = `<div class="watch">
         <div>
           <h1 id="title">${esc(v.title)}</h1>
-          <div class="player"><iframe src="https://www.youtube-nocookie.com/embed/${esc(id)}?autoplay=1&rel=0"
-            allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
-            referrerpolicy="strict-origin-when-cross-origin" title="Video player"></iframe></div>
+          <div class="player">${playerFor(id)}</div>
           <div class="rate"><span>Rate this video: <span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span></span><a>Save to Favorites</a><a>Share Video</a></div>
         </div>
         <div>
