@@ -26,7 +26,7 @@ export const EN = {
   // hub and about
   'hub.ribbon': 'Jubilee Campus',
   'hub.help': '<p>Click a part of the Computer Science building.</p><p>The front door has a keypad to crack. The Atrium bakes cakes for hungry students. The A32 Lab is for pair programming, which here means matching pairs.</p><p>Each game has three levels: First Year, Second Year and Final Year. Fewer mistakes, more stars.</p><p>F1 shows the rules and F2 starts again.</p>',
-  'about.body': '<p><b>Purble Place: Jubilee Campus</b>, version {version}.</p><p>Made for HackNotts 26. The scenery is drawn from photos of the Computer Science building on Jubilee Campus. Every picture and sound is generated in code.</p>',
+  'about.body': '<p><b>Purble Place: Jubilee Campus</b>, version {version}.</p><p>Made for HackNotts 26. The scenery is drawn from photos of the Computer Science building on Jubilee Campus. The pictures are drawn in code, and the sounds are the original recordings from Windows 7.</p>',
 
   // statistics
   'stats.game': 'Game',
@@ -49,7 +49,9 @@ export const EN = {
   'pairs.swapped': 'Merge conflict! Two tiles swapped.',
   'pairs.win.title': 'Pair programmed',
   'pairs.win.text': 'All {pairs} pairs merged in {turns} turns, {time}. Score {score}.',
-  'pairs.help': '<p>Welcome to the A32 Lab. Turn over two tiles at a time. A match stays face up, anything else flips back.</p><p>First Year lets you read the board for a few seconds. Second Year only gives you a glimpse. Final Year gives you nothing, and after every fourth miss there is a merge conflict and two face-down tiles swap places.</p><p>Fewer turns means more stars. Arrow keys move, Enter or Space turns a tile.</p>',
+  'pairs.lose.title': 'Out of turns',
+  'pairs.lose.text': 'You found {found} of {pairs} pairs in {turns} turns.',
+  'pairs.help': '<p>Welcome to the A32 Lab. Turn over two tiles at a time. A match stays face up, anything else flips back.</p><p>First Year lets you read the board for a few seconds. Second Year only gives you a glimpse. Final Year gives you nothing, and after every fourth miss there is a merge conflict and two face-down tiles swap places.</p><p>Fewer turns means more stars. Second Year and Final Year have a turn limit, shown next to Turns. The counter goes red when 5 are left, and if the board is still not clear when they run out, you lose.</p><p>Arrow keys move, Enter or Space turns a tile.</p>',
 
   // Purble Shop
   'shop.check': 'Check',

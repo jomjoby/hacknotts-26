@@ -55,28 +55,37 @@ export class ComfyCakes extends MiniGame {
     this.hud.target.textContent = this.cfg.target;
     this.state = 'playing';
     this.sync();
+    this.sound.play('tv-on');
   }
 
   bindWorld() {
     const w = this.world;
     const snd = (name) => () => this.sound.play(name);
-    w.on('pan', snd('place'));
-    w.on('pour', ({ batter }) => { this.sound.play('pour'); this.fx.tankBatter.setAttribute('fill', byId(BATTERS, batter).color); });
-    w.on('pipe', ({ icing }) => { this.sound.play('pipe'); this.fx.tankIcing.setAttribute('fill', byId(ICINGS, icing).color); });
-    w.on('drop', snd('pop'));
-    w.on('topping', snd('select'));
-    w.on('belt', snd('belt'));
+    const sndLater = (name, seconds) => this.after(seconds, () => this.sound.play(name));
+    w.on('pan', snd('cake-pan'));
+    w.on('pour', ({ batter }) => {
+      this.sound.play('cake-batter');
+      sndLater('cake-filling', 0.15);
+      this.fx.tankBatter.setAttribute('fill', byId(BATTERS, batter).color);
+    });
+    w.on('pipe', ({ icing }) => { this.sound.play('cake-frosting'); this.fx.tankIcing.setAttribute('fill', byId(ICINGS, icing).color); });
+    w.on('topping', ({ count }) => this.sound.play(count ? 'cake-decor' : 'cake-rotate'));
+    w.on('drop', () => { this.sound.play('cake-next'); sndLater('cake-shaker', 0.1); });
+    w.on('belt', snd('cake-belt'));
+    w.on('oven-start', snd('cake-flame'));
     w.on('oven-done', snd('ding'));
     w.on('oven-ready', snd('ding'));
     w.on('oven-open', ({ state }) => {
+      this.sound.play('cake-button');
       this.sound.play(state === 'golden' ? 'ding' : 'strike');
       if (state !== 'golden') this.toast(this.t(state === 'raw' ? 'cakes.say.raw' : 'cakes.say.burnt'));
     });
     w.on('oven-burning', () => this.toast(this.t('cakes.say.burning')));
-    w.on('pickup', snd('bell'));
-    w.on('customer', snd('customer'));
-    w.on('discard', snd('trash'));
-    w.on('undo', snd('remove'));
+    w.on('pickup', snd('cake-boxed'));
+    w.on('customer', snd('chef-enter'));
+    w.on('leave', snd('chef-exit'));
+    w.on('discard', snd('cake-dumped'));
+    w.on('undo', snd('cake-back'));
     w.on('served', ({ customer, points }) => {
       this.sound.play('serve');
       this.floatText(`+${points}`, customer.seat);
@@ -95,6 +104,7 @@ export class ComfyCakes extends MiniGame {
     if (w.status === 'won') {
       this.finish({
         won: true, stars: starsForStrikes(w.strikes), score: w.score, time: Math.round(w.time), moves: w.served,
+        sound: 'comfy-win',
         title: t('cakes.win.title'),
         text: t('cakes.win.text', { served: w.served, strikes: w.strikes, score: w.score }),
       });

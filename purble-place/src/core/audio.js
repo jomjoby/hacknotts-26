@@ -1,42 +1,34 @@
-// Synthesised sound effects (Web Audio). No audio files are shipped, so there is
-// nothing to license or preload. Every effect is a handful of oscillator notes.
+// Sound effects: the original Purble Place recordings (see samples.js and assets/sounds/).
+// A name with no recording makes no sound.
 
-const n = (f, d, o = {}) => ({ f, d, t: 'sine', v: 0.12, at: 0, ...o });
+import { SAMPLES, ALIASES, SILENT } from './samples.js';
 
-const SOUNDS = {
-  click: [n(660, 0.05, { t: 'square', v: 0.05 })],
-  select: [n(520, 0.06, { t: 'triangle' }), n(780, 0.07, { t: 'triangle', at: 0.05 })],
-  flip: [n(300, 0.08, { t: 'triangle', to: 520 })],
-  unflip: [n(520, 0.08, { t: 'triangle', to: 300, v: 0.08 })],
-  match: [n(523, 0.1), n(659, 0.1, { at: 0.09 }), n(784, 0.18, { at: 0.18 })],
-  mismatch: [n(220, 0.18, { t: 'sawtooth', v: 0.06, to: 160 })],
-  swap: [n(400, 0.07, { t: 'square', v: 0.05, to: 800 }), n(800, 0.07, { t: 'square', v: 0.05, to: 400, at: 0.08 })],
-  win: [n(523, 0.12), n(659, 0.12, { at: 0.12 }), n(784, 0.12, { at: 0.24 }), n(1047, 0.35, { at: 0.36 })],
-  lose: [n(392, 0.18, { t: 'triangle' }), n(330, 0.18, { t: 'triangle', at: 0.18 }), n(262, 0.4, { t: 'triangle', at: 0.36 })],
-  place: [n(440, 0.06, { t: 'triangle', to: 600 })],
-  remove: [n(600, 0.06, { t: 'triangle', to: 380, v: 0.08 })],
-  check: [n(330, 0.08, { t: 'square', v: 0.05 }), n(440, 0.1, { t: 'square', v: 0.05, at: 0.08 })],
-  hint: [n(880, 0.1), n(1175, 0.18, { at: 0.1 })],
-  pour: [n(180, 0.5, { t: 'sawtooth', v: 0.035, to: 110 })],
-  pipe: [n(700, 0.12, { t: 'triangle', v: 0.06, to: 500 }), n(500, 0.12, { t: 'triangle', v: 0.06, to: 700, at: 0.12 })],
-  pop: [n(500, 0.08, { t: 'sine', to: 900 })],
-  belt: [n(120, 0.18, { t: 'square', v: 0.025, to: 90 })],
-  ding: [n(1318, 0.5, { v: 0.1 }), n(1760, 0.5, { v: 0.05, at: 0.02 })],
-  bell: [n(1568, 0.35, { v: 0.1 }), n(2093, 0.45, { v: 0.07, at: 0.12 })],
-  serve: [n(659, 0.1), n(880, 0.1, { at: 0.1 }), n(1175, 0.25, { at: 0.2 })],
-  strike: [n(180, 0.3, { t: 'sawtooth', v: 0.08, to: 90 })],
-  customer: [n(784, 0.1, { t: 'triangle' }), n(988, 0.14, { t: 'triangle', at: 0.1 })],
-  trash: [n(300, 0.2, { t: 'square', v: 0.04, to: 80 })],
-};
+/** The same recording asked for twice inside this many seconds plays once (several cakes moving on together). */
+const RETRIGGER = 0.08;
 
 export class Sound {
-  constructor({ muted = false } = {}) {
+  /**
+   * @param {object} [opts]
+   * @param {boolean} [opts.muted]
+   * @param {string}  [opts.base]     folder URL holding the wav files; leave out to play nothing
+   */
+  constructor({ muted = false, base = null } = {}) {
     this.muted = muted;
+    this.base = base;
     this.ctx = null;
+    this.buffers = new Map();   // recording name -> decoded AudioBuffer
+    this._loading = new Map();  // recording name -> promise
+    this._last = new Map();     // recording name -> when it last started (seconds, performance.now)
+    this._live = new Set();     // sources that are still playing
+    this._decoder = null;
+    this._wanted = null;
+    this._dead = false;
   }
 
   setMuted(value) {
     this.muted = !!value;
+    if (this.muted) this.stopAll();
+    else if (this._wanted) this.preload(this._wanted);
   }
 
   _context() {
@@ -49,33 +41,77 @@ export class Sound {
     return this.ctx;
   }
 
+  /**
+   * Fetch and decode recordings ahead of time (all of them, or just `names`).
+   * Safe to call any number of times; a file that cannot be loaded is skipped and stays silent.
+   * While muted nothing is fetched, but the request is kept and carried out when sound is switched on.
+   */
+  preload(names = Object.keys(SAMPLES)) {
+    this._wanted = names;
+    if (this.muted) return Promise.resolve();
+    return Promise.all(names.map((name) => this._load(name)));
+  }
+
+  _load(name) {
+    const sample = SAMPLES[name];
+    if (!sample || !this.base || this._dead || this.buffers.has(name)) return Promise.resolve();
+    let job = this._loading.get(name);
+    if (!job) {
+      job = this._fetch(sample.file)
+        .then((buffer) => { if (buffer && !this._dead) this.buffers.set(name, buffer); })
+        .catch(() => {});
+      this._loading.set(name, job);
+    }
+    return job;
+  }
+
+  async _fetch(file) {
+    const res = await fetch(new URL(file, this.base));
+    if (!res.ok) return null;
+    // An offline context decodes without needing a click first, so the sound is ready before the first one is played.
+    if (!this._decoder) {
+      const Offline = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+      this._decoder = Offline ? new Offline(1, 1, 44100) : this._context();
+    }
+    return this._decoder ? this._decoder.decodeAudioData(await res.arrayBuffer()) : null;
+  }
+
   play(name) {
     if (this.muted) return;
-    const notes = SOUNDS[name];
-    if (!notes) return;
+    name = ALIASES[name] || name;
+    const sample = SAMPLES[name];
+    if (!sample) return;
+    const buffer = this.buffers.get(name);
+    if (!buffer) { this._load(name); return; }   // not here yet, so this one is silent
     const ctx = this._context();
     if (!ctx) return;
-    const t0 = ctx.currentTime;
-    for (const note of notes) {
-      const start = t0 + note.at;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = note.t;
-      osc.frequency.setValueAtTime(note.f, start);
-      if (note.to) osc.frequency.exponentialRampToValueAtTime(note.to, start + note.d);
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(note.v, start + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + note.d);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + note.d + 0.03);
-    }
+    const now = performance.now() / 1000;   // not ctx.currentTime, which stands still until the first click wakes the context
+    if (now - (this._last.get(name) ?? -1) < RETRIGGER) return;
+    this._last.set(name, now);
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    src.buffer = buffer;
+    gain.gain.value = sample.gain ?? 1;
+    src.connect(gain).connect(ctx.destination);
+    this._live.add(src);
+    src.onended = () => this._live.delete(src);
+    src.start();
+  }
+
+  /** Cut off any recording that is still playing (a long one should not carry on after leaving the game). */
+  stopAll() {
+    for (const src of this._live) { try { src.stop(); } catch { /* already finished */ } }
+    this._live.clear();
   }
 
   destroy() {
+    this._dead = true;
+    this.stopAll();
     if (this.ctx) this.ctx.close().catch(() => {});
     this.ctx = null;
+    this.buffers.clear();
   }
 }
 
-export const SOUND_NAMES = Object.keys(SOUNDS);
+/** Every name the code may ask for. */
+export const SOUND_NAMES = [...Object.keys(SAMPLES), ...Object.keys(ALIASES), ...SILENT];

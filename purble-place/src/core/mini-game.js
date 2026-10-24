@@ -154,7 +154,8 @@ export class MiniGame {
 
   /**
    * End the round: records stats, plays a jingle, emits `game:end` and shows the result dialog.
-   * @param {object} r { won, stars, score, time, moves, title, text, mascot }
+   * @param {object} r { won, stars, score, time, moves, title, text, mascot, sound }
+   *                   `sound` names the jingle to play instead of the default win or lose one
    */
   finish(r) {
     this.state = 'over';
@@ -164,7 +165,7 @@ export class MiniGame {
       game: this.def.id, level: this.level, won: !!r.won,
       stars: r.stars || 0, score: r.score, time: r.time, moves: r.moves,
     });
-    this.sound.play(r.won ? 'win' : 'lose');
+    this.sound.play(r.sound || (r.won ? 'win' : 'lose'));
     const body = `<p>${r.text || ''}</p>${r.won ? `<p class="pp-result-stars">${starsHTML(r.stars || 0)}</p>` : ''}`;
     this.dialog({
       title: r.title,
@@ -216,6 +217,7 @@ export class MiniGame {
     this._disposers.forEach((off) => off());
     this._disposers = [];
     this._timers = [];
+    this.sound?.stopAll?.();   // a long recording should not play on over the town square
     this.onDestroy();
     this.el.remove();
   }

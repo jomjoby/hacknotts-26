@@ -118,6 +118,73 @@ describe('Purble Pairs – trickster swap', () => {
   });
 });
 
+describe('Purble Pairs – turn limit', () => {
+  const pairsOf = (level) => PAIRS_LEVELS[level].cols * PAIRS_LEVELS[level].rows / 2;
+
+  /** A player who remembers every tile they have seen but does not know which tiles the trickster swaps. */
+  function perfectMemory(level, seed) {
+    const rng = new Rng(seed);
+    const m = new PairsModel({ ...PAIRS_LEVELS[level], maxTurns: 0, rng: new Rng(seed * 7 + 1) });
+    const mem = new Map();
+    const down = () => m.tiles.filter((t) => t.state === 'down').map((t) => t.index);
+    if (PAIRS_LEVELS[level].peek > 0) m.tiles.forEach((t) => { if (rng.chance(0.5)) mem.set(t.index, t.symbol); });
+    for (let guard = 0; !m.done && guard < 500; guard++) {
+      if (m.pending) { m.dismissPending(); m.takeSwap(); }
+      for (const i of [...mem.keys()]) if (m.tiles[i].state === 'matched') mem.delete(i);
+      const seen = new Map(); let pair = null;
+      for (const [i, s] of mem) { if (seen.has(s)) { pair = [seen.get(s), i]; break; } seen.set(s, i); }
+      let a; let b;
+      if (pair) [a, b] = pair;
+      else {
+        const unknown = down().filter((i) => !mem.has(i));
+        a = unknown.length ? rng.pick(unknown) : rng.pick(down());
+        const known = [...mem].find(([i, s]) => s === m.tiles[a].symbol && i !== a);
+        if (known) b = known[0];
+        else { mem.set(a, m.tiles[a].symbol); const rest = down().filter((i) => i !== a && !mem.has(i)); b = rest.length ? rng.pick(rest) : rng.pick(down().filter((i) => i !== a)); }
+      }
+      m.flip(a); m.flip(b);
+      mem.set(a, m.tiles[a].symbol); mem.set(b, m.tiles[b].symbol);
+    }
+    return m.done ? m.turns : Infinity;
+  }
+
+  it('First Year has no limit; Second and Final Year do, and Final Year is tighter for its board', () => {
+    assert.equal(PAIRS_LEVELS.beginner.maxTurns, 0);
+    assert.ok(PAIRS_LEVELS.intermediate.maxTurns > 0 && PAIRS_LEVELS.advanced.maxTurns > 0);
+    const perPair = (l) => PAIRS_LEVELS[l].maxTurns / pairsOf(l);
+    assert.ok(perPair('advanced') < perPair('intermediate'), `${perPair('advanced')} vs ${perPair('intermediate')}`);
+  });
+  it('every limit can be met: a player with perfect memory always fits, even with the swaps', () => {
+    for (const level of ['intermediate', 'advanced']) {
+      let worst = 0;
+      for (let seed = 1; seed <= 150; seed++) worst = Math.max(worst, perfectMemory(level, seed));
+      assert.ok(worst <= PAIRS_LEVELS[level].maxTurns, `${level}: worst ${worst}, limit ${PAIRS_LEVELS[level].maxTurns}`);
+      assert.ok(worst >= pairsOf(level));
+    }
+  });
+  it('turnsLeft counts down and outOfTurns trips on the last turn', () => {
+    const m = new PairsModel({ ...PAIRS_LEVELS.beginner, maxTurns: 3, rng: new Rng(2) });
+    assert.equal(m.turnsLeft, 3);
+    const miss = () => { const a = m.tiles.find((t) => t.state === 'down').index; m.flip(a); m.flip(decoyOf(m, a)); };
+    miss(); assert.equal(m.turnsLeft, 2); assert.equal(m.outOfTurns, false);
+    miss(); assert.equal(m.turnsLeft, 1); assert.equal(m.outOfTurns, false);
+    miss(); assert.equal(m.turnsLeft, 0); assert.equal(m.outOfTurns, true);
+  });
+  it('a half-played turn does not use one up, and clearing the board on the last turn is not a loss', () => {
+    const m = new PairsModel({ ...PAIRS_LEVELS.beginner, maxTurns: 6, rng: new Rng(3) });
+    m.flip(0);
+    assert.equal(m.turns, 0); assert.equal(m.turnsLeft, 6);
+    m.flip(partnerOf(m, 0));
+    for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i].state === 'down') { m.flip(i); m.flip(partnerOf(m, i)); }
+    assert.ok(m.done); assert.equal(m.turns, 6); assert.equal(m.turnsLeft, 0); assert.equal(m.outOfTurns, false);
+  });
+  it('with no limit nothing runs out', () => {
+    const m = make('beginner');
+    for (let n = 0; n < 40; n++) { const a = m.tiles.find((t) => t.state === 'down').index; m.flip(a); m.flip(decoyOf(m, a)); m.dismissPending(); }
+    assert.equal(m.turnsLeft, Infinity); assert.equal(m.outOfTurns, false);
+  });
+});
+
 describe('Purble Pairs – rating', () => {
   it('stars fall as turns rise', () => {
     const pairs = 6;

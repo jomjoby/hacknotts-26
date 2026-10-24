@@ -240,6 +240,7 @@ export class PurbleShop extends MiniGame {
     this.say(this.t('shop.say.lose'), 'sad');
     this.finish({
       won: false, moves: this.model.guessesUsed,
+      sound: 'lose-fanfare',
       title: this.t('shop.lose.title'),
       text: this.t('shop.lose.text', { secret: this.secretNames() }),
     });
