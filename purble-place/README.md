@@ -33,8 +33,8 @@ browser (Game menu, Statistics).
 
 ES modules do not load from `file://`, so serve the folder over http. Any of these works.
 
-- Your normal dev server (for example VS Code Live Server) from the repo root, then open `/apps/purble-place/`.
-- `python apps/purble-place/tools/serve.py` and open http://localhost:8765/. It sends no-cache headers, so edits show up on a normal reload.
+- Your normal dev server (for example VS Code Live Server) from the repo root, then open `/purble-place/`.
+- `python purble-place/tools/serve.py` and open http://localhost:8765/. It sends no-cache headers, so edits show up on a normal reload.
 
 `index.html` in this folder is just the game filling the browser tab. It takes a few URL parameters, handy for testing:
 `?game=comfy-cakes&level=advanced&seed=42&mute=1&menubar=0`. Game ids are `comfy-cakes`, `purble-pairs` and `purble-shop`;
@@ -50,7 +50,7 @@ let purble = null;
 
 async function openPurblePlace() {
   if (purble) return;                                         // already open
-  const { mount } = await import('./apps/purble-place/src/index.js');
+  const { mount } = await import('./purble-place/src/index.js');
   const body = makeWindow('Purble Place', 800, 623);          // your window code: returns the element to fill
   purble = mount(body, { onExit: closePurblePlace });         // onExit powers Game > Exit
 }
@@ -74,7 +74,7 @@ Window behaviour to wire up:
 
 The game draws on a fixed 800 by 600 stage and scales to fit whatever size its container is, letterboxed, so any window
 size works. 800 by 623 (stage plus the 23px menu bar) is a good default and `manifest.minSize` is 480 by 383.
-`import { manifest } from './apps/purble-place/src/index.js'` also gives you `manifest.icon`, a small SVG string for a
+`import { manifest } from './purble-place/src/index.js'` also gives you `manifest.icon`, a small SVG string for a
 desktop or start menu icon, and `manifest.name`.
 
 It loads its own stylesheet (all classes start with `pp-`, `cc-`, `pr-` or `sh-`) and never touches the page outside its
@@ -153,14 +153,14 @@ does this so the three names don't crowd each other).
 
 ## Tests
 
-Start a server and open `/apps/purble-place/test/index.html`. The tab title says `PASS` and the count when everything
+Start a server and open `/purble-place/test/index.html`. The tab title says `PASS` and the count when everything
 is fine (172 tests: rules for all three games, a bot that plays every Comfy Cakes level, the undo feature, menus,
 drag and drop, the custom element).
 
 ## Folder layout
 
 ```
-apps/purble-place/
+purble-place/
   index.html            the game in a full browser tab
   src/
     index.js            mount(), registerGame(), manifest
