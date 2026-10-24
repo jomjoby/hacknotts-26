@@ -9,6 +9,10 @@ function startMenu() {
     }
 }
 
+function shutDown() {
+    window.close();
+}
+
 function openApp(app) {
     switch (app) {
         case "firefox":

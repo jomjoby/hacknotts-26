@@ -41,9 +41,42 @@
 
         </div>
 
-        <div id="start-menu" class="start-menu">
-            
+
+<div id="start-menu" class="start-menu">
+
+    <div class="start-left">
+        <button onclick="openApp('firefox')">
+            <image src="images/Mozilla_Firefox_logo_2004.webp"></image> Internet
+        </button>
+
+        <button onclick="openApp('purble-place')">
+            <image src="images/purble-place.png"></image> Purble Place
+        </button>
+
+    </div>
+
+    <div class="start-right">
+
+        <button onclick="openApp('documents')">
+            📁 Documents
+        </button>
+
+        <button onclick="openApp('control-panel')">
+            ⚙️ Control Panel
+        </button>
+    </div>
+
+    <div class="start-bottom">
+        <div class="search-box">
+            <input type="text" placeholder="Search programs and files...">
         </div>
+
+        <button onclick="shutDown()">
+            Shut down
+        </button>
+    </div>
+
+</div>
 
     </div>
 
