@@ -183,8 +183,9 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
 
 
 // ---- Purble Place (purble-place/) ---------------------------------------------
-// The game is built from JavaScript modules, which browsers only load over http(s),
-// so it needs the OS opened through a local web server rather than as a file.
+// The game is built from JavaScript modules. Some browsers (Chrome) won't load modules from a
+// page opened as a file, so then we use addons/purble-place-bundle.js, the same game as one plain
+// script (rebuild it with addons/build-purble-bundle.sh after changing the game).
 
 let purble = null;
 let purbleWindow = null;
@@ -220,21 +221,32 @@ async function openPurblePlace() {
         win.body.querySelector('p').textContent = text;
     };
 
-    if (location.protocol === 'file:') {
-        showProblem('Purble Place needs the OS to be opened through a local web server, not straight from the file. ' +
-            'In the project folder run "python3 -m http.server 8000", then open http://localhost:8000/');
-        return;
-    }
-
+    let mount;
     try {
-        const { mount } = await import('./purble-place/src/index.js');
-        if (purbleWindow !== win) return; // closed while it was loading
-        purble = mount(win.body, { onExit: () => win.close() });
-        purble.focus();
+        ({ mount } = await import('./purble-place/src/index.js'));
     } catch (err) {
-        console.error(err);
-        showProblem('The game files failed to load (' + err.message + ').');
+        try {
+            await loadScript('addons/purble-place-bundle.js');
+            mount = window.PurblePlaceBundle.mount;
+        } catch {
+            console.error(err);
+            showProblem('The game files failed to load (' + err.message + ').');
+            return;
+        }
     }
+    if (purbleWindow !== win) return; // closed while it was loading
+    purble = mount(win.body, { onExit: () => win.close() });
+    purble.focus();
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Could not load ' + src));
+        document.head.appendChild(script);
+    });
 }
 
 // Desktop icons snap to a grid, like Windows: click an icon to select it, drag it

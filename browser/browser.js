@@ -30,7 +30,6 @@
   // makes them look properly 2000s. Famous sites get a shortcut and their best retro year.
   const FAMOUS = {
     google: ['www.google.com', 2005, 'Google'],
-    youtube: ['www.youtube.com', 2006, 'YouTube'],
     myspace: ['www.myspace.com', 2006, 'MySpace'],
     bebo: ['www.bebo.com', 2007, 'Bebo'],
     facebook: ['www.facebook.com', 2006, 'Facebook'],
@@ -71,8 +70,10 @@
   const hostOf = address => normalise(address).split('/')[0];
   const looksLikeAddress = text => !/\s/.test(text.trim()) && /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(normalise(text));
 
-  // { address, aliases, title, src, description, icon, app }
+  // { address, aliases, title, src, description, icon, app, paths }
   // app: an app id (like 'forum') announced to Clippy while the site is on screen.
+  // paths: true if the page handles its own sub-pages. Then "site.com/watch?v=1" opens the page
+  //   with "#watch?v=1" on the end, and the page can tell the browser when it changes (see site.js).
   function registerSite(site) {
     const entry = Object.assign({ aliases: [], description: '', icon: '' }, site);
     entry.address = normalise(entry.address);
@@ -93,6 +94,17 @@
     title: 'NottsNet - Your Gateway to the Web',
     src: 'browser/sites/home.html',
     description: 'The finest portal on the information superhighway. News, chat, search and more.',
+  });
+
+  // A 2006-style YouTube with real videos that play (YouTube's embed player is allowed in other
+  // pages; the archived 2006 site's Flash player can't play anything any more).
+  registerSite({
+    address: 'www.youtube.com',
+    aliases: ['youtube', 'youtube.com', 'www.youtube.co.uk', 'youtube.co.uk', 'you tube'],
+    title: 'YouTube - Broadcast Yourself',
+    src: 'browser/sites/youtube.html',
+    description: 'Watch the classics: Evolution of Dance, Charlie bit my finger, Keyboard Cat and more. Or paste any YouTube link.',
+    paths: true,
   });
 
   // FunForum: the team's community forum and chat (fhome.html etc. at the repo root). It took
@@ -690,7 +702,9 @@
 
     const address = normalise(text);
     const host = hostOf(address);
-    if (findSite(host)) return { kind: 'missing', address }; // a page we haven't built on a site we have
+    const owner = findSite(host);
+    if (owner && owner.paths) return { kind: 'site', site: owner.address, address, hash: address.slice(address.indexOf('/') + 1) };
+    if (owner) return { kind: 'missing', address }; // a page we haven't built on a site we have
     if (FAKE_SITES.has(host)) return { kind: 'error', address };
     if (LIVE_HOSTS.test(host)) return { kind: 'live', address, title: decode(address.split('/').pop()).replace(/_/g, ' ') };
     const famous = famousFor(address);
@@ -751,10 +765,10 @@
     }
 
     let html = null, src = null;
-    const site = entry.kind === 'site' && findSite(entry.address);
+    const site = entry.kind === 'site' && findSite(entry.site || entry.address);
     const external = entry.kind === 'web' || entry.kind === 'live';
     if (site) {
-      src = config.base + site.src + FRESH;
+      src = config.base + site.src + FRESH + (entry.hash ? '#' + entry.hash : '');
       if (!(await fileExists(src))) html = missingPage(site);
     } else if (external) {
       if (navigator.onLine === false) html = errorPage(entry.address, true);
@@ -798,7 +812,7 @@
       const path = tab.frame.contentWindow.location.pathname;
       const current = tab.history[tab.index];
       const landed = sites.find(s => path.endsWith('/' + s.src));
-      if (landed && current.address !== landed.address) {
+      if (landed && (current.site || current.address) !== landed.address) {
         tab.history = tab.history.slice(0, tab.index + 1);
         tab.history.push({ kind: 'site', address: landed.address });
         tab.index++;
@@ -806,7 +820,7 @@
     }
 
     const entry = tab.history[tab.index];
-    const site = entry.kind === 'site' && findSite(entry.address);
+    const site = entry.kind === 'site' && findSite(entry.site || entry.address);
     tab.title = (doc && doc.title) || (site && site.title) || entry.title || entry.address;
     tab.icon = (site && site.icon) || (entry.kind === 'web' || entry.kind === 'live' ? favicon(entry.address) : GLOBE);
     tab.loading = false;
@@ -856,6 +870,20 @@
     if (msg.action === 'navigate' && msg.address) {
       if (msg.newTab) newTab(String(msg.address));
       else navigate(String(msg.address), tab);
+    } else if (msg.action === 'visited' && msg.address) {
+      // The page moved to one of its own sub-pages without reloading: record it, don't reload.
+      const entry = entryFor(String(msg.address));
+      const current = tab.history[tab.index];
+      if (!entry) return;
+      if (current && current.address === entry.address) { // same page, maybe a better title
+        if (msg.title) { tab.title = String(msg.title); updateChrome(); }
+        return;
+      }
+      tab.history = tab.history.slice(0, tab.index + 1);
+      tab.history.push(entry);
+      tab.index++;
+      if (msg.title) tab.title = String(msg.title);
+      updateChrome();
     } else if (msg.action === 'search' && msg.query) {
       go(tab, searchEntry(String(msg.query)));
     }
