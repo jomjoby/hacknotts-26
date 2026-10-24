@@ -152,6 +152,12 @@ Cakes wavs are the supplied 32-bit files converted to 16-bit and trimmed, becaus
 mp3s are used as they came. Everything is fetched when the game is mounted (about 4.5 MB in all, nothing while muted). A
 sound asked for before its file has arrived stays silent that one time.
 
+A page opened straight from disk (`file://`) is not allowed to fetch the sound files: Firefox blocks it as a cross-origin
+request and Chrome refuses the `file:` scheme. So the OS loads `addons/purble-place-sounds.js` in that case, a script that
+carries all the sounds inline (about 6 MB, only loaded from disk, never over http). The game reads them from
+`window.PURBLE_PLACE_SOUNDS` when it is there and fetches them otherwise. After adding or changing a sound file, rebuild it
+with `python addons/build-purble-sounds.py`.
+
 | Action in Comfy Cakes | Sound name | File |
 | --- | --- | --- |
 | Level starts | `tv-on` | PURBLES_TVON_DING |
@@ -213,7 +219,7 @@ does this so the three names don't crowd each other).
 ## Tests
 
 Start a server and open `/addons/purble-place/test/index.html`. The tab title says `PASS` and the count when everything
-is fine (210 tests: rules for all three games, a bot that plays every Comfy Cakes level, the undo feature, the sound
+is fine (212 tests: rules for all three games, a bot that plays every Comfy Cakes level, the undo feature, the sound
 files and which action plays which, menus, drag and drop, the custom element).
 
 ## Folder layout
