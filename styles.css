@@ -180,7 +180,9 @@ body {
     left: 10px;
 
     width: 30%;
-    height: 60%;
+    min-width: 380px; /* so labels and the search box never get squashed on small screens */
+    height: auto; /* fits its contents, so there's no empty gap at the bottom */
+    max-height: calc(100vh - 100px);
     box-sizing: border-box;
     padding: 15px;
 
@@ -233,6 +235,34 @@ body {
 
 .start-bottom button {
     flex-shrink: 0;
+}
+
+/* Search results (index.js): replace the two columns while you type */
+.start-results {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.start-menu:not(.searching) .start-results,
+.start-menu.searching .start-left,
+.start-menu.searching .start-right {
+    display: none;
+}
+
+.start-results-heading {
+    padding: 6px 4px 2px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: Tahoma, sans-serif;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.start-results button:first-of-type {
+    background: rgba(120, 180, 255, 0.25); /* the one Enter opens */
 }
 
 /* Search bar container */

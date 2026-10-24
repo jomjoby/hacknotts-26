@@ -2,12 +2,98 @@
 function startMenu() {
     const menu = document.getElementById("start-menu");
 
-    if (menu.style.display === "block") {
+    // "grid" (not "block") so the two columns and the search bar lay out as styles.css intends
+    if (menu.style.display === "grid") {
         menu.style.display = "none";
     } else {
-        menu.style.display = "block";
+        menu.style.display = "grid";
+        // Like Windows 7, the search box is ready to type into straight away
+        startSearch.value = "";
+        runStartSearch();
+        startSearch.focus();
     }
 }
+
+// ---- Start menu search ----
+// Like Windows 7: typing lists the matching programs, plus searching the internet or asking Clippy.
+// Enter opens the top result, Escape clears the search (or closes the menu).
+
+const startSearch = document.querySelector("#start-menu .search-box input");
+const startResults = document.createElement("div");
+startResults.className = "start-results";
+document.querySelector("#start-menu .start-bottom").before(startResults);
+
+function closeStartMenu() {
+    document.getElementById("start-menu").style.display = "none";
+}
+
+function startResultButton(label, icon, action) {
+    const button = document.createElement("button");
+    button.type = "button";
+    const img = document.createElement("img");
+    img.src = icon;
+    img.alt = "";
+    button.append(img, " " + label); // text, not HTML, so the search can't inject anything
+    button.addEventListener("click", () => {
+        closeStartMenu();
+        action();
+    });
+    return button;
+}
+
+function startResultsHeading(text) {
+    const heading = document.createElement("div");
+    heading.className = "start-results-heading";
+    heading.textContent = text;
+    startResults.appendChild(heading);
+}
+
+function runStartSearch() {
+    const menu = document.getElementById("start-menu");
+    const query = startSearch.value.trim();
+    menu.classList.toggle("searching", query !== "");
+    startResults.replaceChildren();
+    if (!query) return;
+
+    // Programs and places from the menu whose name matches (copies keep their onclick)
+    const matches = [...menu.querySelectorAll(".start-left button, .start-right button")]
+        .filter(button => button.textContent.toLowerCase().includes(query.toLowerCase()));
+    startResultsHeading(matches.length ? "Programs (" + matches.length + ")" : "No programs match your search");
+    matches.forEach(button => startResults.appendChild(button.cloneNode(true)));
+
+    startResultsHeading("Other places");
+    startResults.appendChild(startResultButton('Search the Internet for "' + query + '"', "images/Mozilla_Firefox_logo_2004.webp", () => {
+        if (window.RetroBrowser) RetroBrowser.open(query);
+    }));
+    startResults.appendChild(startResultButton('Ask Clippy "' + query + '"', "images/clippy.svg", () => {
+        if (window.Clippy) Clippy.ask(query);
+    }));
+}
+
+startSearch.addEventListener("input", runStartSearch);
+
+startSearch.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const first = startResults.querySelector("button");
+        if (first) first.click();
+    } else if (e.key === "Escape") {
+        if (startSearch.value) {
+            startSearch.value = "";
+            runStartSearch();
+        } else {
+            closeStartMenu();
+        }
+    }
+});
+
+// Clicking anywhere outside the start menu (and the start button) closes it, like Windows 7
+document.addEventListener("pointerdown", e => {
+    const menu = document.getElementById("start-menu");
+    if (menu.style.display !== "grid") return;
+    if (menu.contains(e.target) || e.target.closest(".taskbar-btn[onclick^='startMenu']")) return;
+    closeStartMenu();
+});
 
 function shutDown() {
     window.close();
