@@ -18,7 +18,7 @@ body {
     bottom: 10px;
     left: 10px;
     right: 10px;
-    height: 48px;
+    height: 60px;
 
     background: linear-gradient(
         to bottom,
@@ -39,25 +39,40 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 0 8px;
+    padding: 8px;
     box-sizing: border-box;
 }
 
-.taskbar button {
+.taskbar-btn
+{
+    margin: 4px;
     background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.25),
-        rgba(255, 255, 255, 0.05)
+    to bottom,
+    rgba(180, 210, 235, 0.35),
+    rgba(80, 115, 155, 0.55),
+    rgba(30, 55, 85, 0.75)
     );
 
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 3px;
 
-    color: white;
-    padding: 8px 15px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+
+    width: 50px;
+    height: 100%;
+    border-radius: 9px;
+
+    contain: content;
+
     cursor: pointer;
+
+}
+
+.taskbar-btn image {
+    width: 10px;
+    height: 10px;
 }
 
 .taskbar button:hover {
     background: rgba(255, 255, 255, 0.3);
 }
+
