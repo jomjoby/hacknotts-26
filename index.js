@@ -8,3 +8,6 @@ function startMenu() {
         menu.style.display = "block";
     }
 }
+
+
+
