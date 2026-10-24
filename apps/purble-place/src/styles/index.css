@@ -1,0 +1,6 @@
+/* Purble Place – stylesheet entry. Split by concern; add your own game's CSS with another @import. */
+@import url('./base.css');
+@import url('./hub.css');
+@import url('./pairs.css');
+@import url('./shop.css');
+@import url('./cakes.css');
