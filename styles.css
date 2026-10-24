@@ -1,0 +1,63 @@
+
+body {
+    margin: 0;
+}
+
+.desktop img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.taskbar {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    height: 48px;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(180, 210, 235, 0.35),
+        rgba(45, 75, 110, 0.65)
+    );
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 7px;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 2px 8px rgba(0, 0, 0, 0.4);
+
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+.taskbar button {
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.25),
+        rgba(255, 255, 255, 0.05)
+    );
+
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+
+    color: white;
+    padding: 8px 15px;
+    cursor: pointer;
+}
+
+.taskbar button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
