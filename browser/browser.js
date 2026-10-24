@@ -107,6 +107,8 @@
   // -------------------------------------------------------------- helpers
 
   const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Added to our own pages' addresses so browsers don't show stale copies while we're editing them.
+  const FRESH = '?v=' + Date.now();
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
@@ -394,7 +396,12 @@
     $('.rb-forward').addEventListener('click', () => step(1));
     $('.rb-reload').addEventListener('click', () => (win.active.loading ? stop() : reload()));
     $('.rb-home').addEventListener('click', () => navigate(config.homepage));
-    $('.rb-urlbar').addEventListener('submit', e => { e.preventDefault(); navigate($('.rb-url').value); $('.rb-url').blur(); });
+    $('.rb-urlbar').addEventListener('submit', e => {
+      e.preventDefault();
+      const typed = $('.rb-url').value;
+      $('.rb-url').blur(); // so the address bar shows the tidied-up address
+      navigate(typed);
+    });
     $('.rb-url').addEventListener('focus', e => e.target.select());
     $('.rb-searchbar').addEventListener('submit', e => {
       e.preventDefault();
@@ -552,10 +559,12 @@
     tab.tabEl.querySelector('.rb-tab-icon').addEventListener('error', e => { e.target.src = GLOBE; });
     $('.rb-tabstrip').insertBefore(tab.tabEl, $('.rb-newtab'));
 
-    tab.frame = document.createElement('iframe');
-    tab.frame.title = 'Web page';
-    tab.frame.addEventListener('load', () => onFrameLoad(tab));
-    $('.rb-viewport').appendChild(tab.frame);
+    tab.frame = null;
+    makeFrame(tab, {});
+    tab.overlay = document.createElement('div');
+    tab.overlay.className = 'rb-connecting';
+    tab.overlay.hidden = true;
+    $('.rb-viewport').appendChild(tab.overlay);
 
     win.tabs.push(tab);
     selectTab(tab);
@@ -568,8 +577,73 @@
     for (const t of win.tabs) {
       t.tabEl.classList.toggle('rb-active', t === tab);
       t.frame.hidden = t !== tab;
+      t.overlay.hidden = t !== tab || !t.connecting;
     }
     updateChrome();
+  }
+
+  // Each page gets a fresh iframe, with its address set before it goes in the page, so the old
+  // page disappears straight away and we can tell when a slow real website actually arrives.
+  function makeFrame(tab, { src, srcdoc, sandboxed }) {
+    const frame = document.createElement('iframe');
+    frame.title = 'Web page';
+    if (sandboxed) frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+    if (srcdoc != null) frame.srcdoc = srcdoc;
+    else if (src) frame.src = src;
+    frame.hidden = win.active !== tab;
+    frame.addEventListener('load', () => onFrameLoad(tab));
+    if (tab.frame) tab.frame.replaceWith(frame);
+    else $('.rb-viewport').appendChild(frame);
+    tab.frame = frame;
+    return frame;
+  }
+
+  function showConnecting(tab, title, text, actions = []) {
+    tab.connecting = true;
+    tab.overlay.innerHTML = `<div class="rb-connecting-box"><img class="rb-connecting-icon" alt="">
+      <div><b></b><p></p><div class="rb-connecting-actions"></div></div></div>`;
+    tab.overlay.querySelector('img').src = GLOBE;
+    tab.overlay.querySelector('b').textContent = title;
+    tab.overlay.querySelector('p').textContent = text;
+    tab.overlay.querySelector('.rb-connecting-actions').append(...actions.map(([label, action]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.addEventListener('click', action);
+      return button;
+    }));
+    tab.overlay.hidden = tab !== win.active;
+  }
+
+  function hideConnecting(tab) {
+    tab.connecting = false;
+    tab.overlay.hidden = true;
+  }
+
+  // A real website has arrived once its page belongs to another site, and we can no longer look inside it.
+  function watchArrival(tab, loadId, entry) {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (!win || tab.loadId !== loadId) { clearInterval(timer); return; }
+      if (arrived(tab)) {
+        clearInterval(timer);
+        hideConnecting(tab);
+        onFrameLoad(tab);
+      } else if (Date.now() - started > 30000) {
+        clearInterval(timer);
+        showConnecting(tab, 'This is taking ages...', entry.kind === 'web'
+          ? `The Wayback Machine might be busy, or it may not have a copy of ${entry.address}.`
+          : `${entry.address} isn't responding.`, [
+          ['Try again', () => load(tab)],
+          ['Open in a real tab', () => window.open(entry.kind === 'web' ? waybackUrl(entry).replace('if_/', '/') : liveUrl(entry), '_blank', 'noopener')],
+        ]);
+        if (tab === win.active) finishProgress('Timed out');
+      }
+    }, 250);
+  }
+
+  function arrived(tab) {
+    try { return !tab.frame.contentDocument; } catch { return true; }
   }
 
   function closeTab(tab) {
@@ -579,6 +653,7 @@
     win.tabs.splice(i, 1);
     tab.tabEl.remove();
     tab.frame.remove();
+    tab.overlay.remove();
     if (win.active === tab) selectTab(win.tabs[Math.min(i, win.tabs.length - 1)]);
   }
 
@@ -640,6 +715,7 @@
     const tab = win.active;
     tab.loadId = (tab.loadId || 0) + 1;
     tab.loading = false;
+    hideConnecting(tab);
     finishProgress('Stopped');
     updateChrome();
   }
@@ -654,13 +730,21 @@
         : entry.kind === 'search' ? `Searching for "${entry.query}"...`
           : 'Opening page http://' + entry.address + '/...');
     }
+    if (entry.kind === 'web' || entry.kind === 'live') tab.title = entry.title || entry.address;
     updateChrome();
+    if (entry.kind === 'web' || entry.kind === 'live') {
+      showConnecting(tab, `Connecting to ${decode(entry.address)}...`, entry.kind === 'web'
+        ? `Fetching the ${entry.year} version from the Wayback Machine. Old sites can take a little while.`
+        : 'Fetching the page.');
+    } else {
+      hideConnecting(tab);
+    }
 
     let html = null, src = null;
     const site = entry.kind === 'site' && findSite(entry.address);
     const external = entry.kind === 'web' || entry.kind === 'live';
     if (site) {
-      src = config.base + site.src;
+      src = config.base + site.src + FRESH;
       if (!(await fileExists(src))) html = missingPage(site);
     } else if (external) {
       if (navigator.onLine === false) html = errorPage(entry.address, true);
@@ -676,32 +760,28 @@
     await sleep(250 + Math.random() * 450); // the authentic dial-up wait
     if (!win || tab.loadId !== loadId) return;
 
+    hideConnecting(tab);
+    tab.expectedSrc = site && !html ? src : null;
     // Real websites run in a sandbox, so old "break out of frames" scripts can't take over the whole OS.
-    if (external && !html) tab.frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
-    else tab.frame.removeAttribute('sandbox');
-
-    if (html) {
-      tab.frame.removeAttribute('src');
-      tab.frame.srcdoc = html;
-    } else {
-      tab.frame.removeAttribute('srcdoc');
-      tab.expectedSrc = site ? src : null;
-      tab.frame.src = src;
-    }
-
+    makeFrame(tab, html ? { srcdoc: html } : { src, sandboxed: external });
     if (external && !html) {
-      // Archived pages can keep trickling in for ages; show the name now and call it done after a few seconds.
-      tab.title = entry.title || entry.address;
-      updateChrome();
-      setTimeout(() => { if (win && tab.loadId === loadId && tab.loading) onFrameLoad(tab); }, 6000);
+      showConnecting(tab, `Connecting to ${decode(entry.address)}...`, entry.kind === 'web'
+        ? `Fetching the ${entry.year} version from the Wayback Machine. Old sites can take a little while.`
+        : 'Fetching the page.');
+      watchArrival(tab, loadId, entry);
     }
   }
 
   function onFrameLoad(tab) {
     // Ignore the empty about:blank load every new iframe fires.
     if (!win || !tab.history.length || !(tab.frame.hasAttribute('src') || tab.frame.hasAttribute('srcdoc'))) return;
+    const current = tab.history[tab.index];
+    const external = current.kind === 'web' || current.kind === 'live';
+    if (external && !arrived(tab)) return; // still the blank frame, not the real site yet
     let doc = null;
-    try { doc = tab.frame.contentDocument; } catch { /* cross-origin page */ }
+    if (!external) {
+      try { doc = tab.frame.contentDocument; } catch { /* cross-origin page */ }
+    }
 
     // If the page followed an ordinary link to another of our sites, keep the address bar in step.
     if (doc && tab.expectedSrc) {

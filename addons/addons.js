@@ -12,18 +12,20 @@
 
   // The repo root, worked out from where this file was loaded from.
   const root = document.currentScript.src.replace(/addons\/addons\.js(\?.*)?$/, '');
+  // Always fetch fresh copies, so browsers don't keep running old versions of the add-ons.
+  const fresh = '?v=' + Date.now();
 
   function addStyle(path) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root + path;
+    link.href = root + path + fresh;
     document.head.appendChild(link);
   }
 
   function addScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = root + path;
+      script.src = root + path + fresh;
       script.onload = resolve;
       script.onerror = () => reject(new Error('Could not load ' + path));
       document.head.appendChild(script);
