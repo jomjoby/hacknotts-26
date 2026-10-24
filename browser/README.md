@@ -4,7 +4,7 @@ A Firefox-on-Windows-7 style web browser for the OS: Aero glass window, tabs, ba
 
 What you can visit:
 
-- **Our own sites**: HTML files in this repo, registered with an address, so typing `msn.com` opens `msn/index.html`.
+- **Our own sites**: HTML files in this repo, registered with an address, so typing `funforum` opens FunForum (`fhome.html`).
 - **Real websites, as they were in the 2000s**: type any address (or just `google`, `youtube`, `myspace`, `bebo`, `bbc`...) and it opens that site's archived copy from the [Wayback Machine](https://web.archive.org), e.g. Google in 2005. Real sites can't be shown live: almost all of them (Google, Bing, DuckDuckGo...) tell browsers not to display them inside another page, but the Wayback Machine's copies are allowed. The year is the `year` setting (default 2006); famous sites use their best year.
 - **Wikipedia, live**: Wikipedia allows being shown inside other pages, so its articles open for real.
 - **Notts Search**: anything that isn't an address is searched. Results are real, with no account or key: the topic's official site (DuckDuckGo instant answers), `www.<word>.com` if an old copy exists, and Wikipedia articles, plus one joke result.
@@ -35,22 +35,15 @@ All the settings live in [`addons/addons.js`](../addons/addons.js), so changing 
 | `bottom`   | `80`                 | Space left for the taskbar when maximised |
 | `base`     | `''`                 | Prefix for site paths, if the page isn't at the repo root |
 
-Or open it from anywhere in code (a start menu entry, say): `RetroBrowser.open()`, `RetroBrowser.open('msn.com')`. Also `navigate(address)`, `newTab(address?)`, `close()`, `registerSite({...})`. Calling `open()` also brings back a minimised browser.
+Or open it from anywhere in code (a start menu entry, say): `RetroBrowser.open()`, `RetroBrowser.open('www.funforum.co.uk')`. Also `navigate(address)`, `newTab(address?)`, `close()`, `registerSite({...})`. Calling `open()` also brings back a minimised browser.
 
 The window has `data-app-window="browser"`, so Clippy notices it, and Clippy can open and close it.
 
-## For the MSN Messenger page
+## FunForum
 
-1. Build it as a normal web page at **`msn/index.html`** (CSS/JS next to it, e.g. `msn/msn.css`). Until that file exists, the browser shows an "Under Construction" page at `messenger.msn.com`.
-2. It opens in a browser tab at `http://messenger.msn.com/` (also reachable by typing `msn`, `msn.com` or `messenger`, the MSN bookmark, or asking Clippy to "open msn").
-3. It runs inside an iframe that fills the browser window, so make the layout fill its window (e.g. `height: 100vh`) and cope with being resized.
-4. Use paths relative to the page (`msn.css`, not `/msn/msn.css`).
-5. To link to another of our sites, use `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`. Also include `<script src="../browser/sites/site.js"></script>` so those links still work when the OS is opened straight from the file instead of a local server.
-6. Clippy can suggest cringey 2000s personal messages. To receive them:
-   ```js
-   parent.addEventListener('clippy:msn-status', e => setPersonalMessage(e.detail.text));
-   ```
-7. The page shares `localStorage` with the whole OS, so prefix your keys (e.g. `msn:contacts`).
+The team's forum (`fhome.html`, `forum.html`, `fabout.html`, `flog.html` at the repo root, images in `images/`) is registered at **`http://www.funforum.co.uk/`**, with `/forum`, `/news` and `/login` for its other pages. It replaced MSN Messenger, so typing `msn`, `msn.com` or `messenger` opens it too, as do `funforum`, `forum`, the FunForum bookmark, the NottsNet home page and asking Clippy to "open funforum". Logins and chat go through Supabase, so they need the internet.
+
+Pages shown in the browser run inside an iframe that fills the browser window, share `localStorage` with the whole OS (so prefix your keys), and can link to our other sites with `<a data-goto="www.nottsnet.co.uk">NottsNet</a>`. Include `<script src="browser/sites/site.js"></script>` (path relative to the page) so those links also work when the OS is opened straight from a file.
 
 ## Adding more sites
 

@@ -45,7 +45,7 @@
   </div>
 
   <div class="taskbar">
-    <button data-open="msn">MSN Messenger</button>
+    <button data-open="forum">FunForum</button>
     <button data-open="notepad">Notepad</button>
     <button data-open="browser">Internet Explorer</button>
     <button data-open="computer">My Computer</button>
@@ -56,7 +56,7 @@
   <script>
     // A tiny fake OS implementing the contract in README.md.
     const APPS = {
-      msn: { title: 'MSN Messenger', body: '<p><b>Personal message:</b> <span class="status">(none)</span></p>' },
+      forum: { title: 'FunForum', body: '<p>(The real forum opens in the browser. This is a stand-in.)</p>' },
       notepad: { title: 'Untitled - Notepad', body: '<textarea placeholder="Type here..."></textarea>' },
       browser: { title: 'Internet Explorer', body: '<p>The page cannot be displayed.</p>' },
       computer: { title: 'My Computer', body: '<p>Local Disk (C:)<br>DVD RW Drive (D:)</p>' },
@@ -99,10 +99,6 @@
     document.querySelectorAll('[data-open]').forEach(b => { b.onclick = () => OS.openApp(b.dataset.open); });
     document.getElementById('clippy-button').onclick = () => Clippy.open();
 
-    // How the MSN app could pick up statuses Clippy suggests.
-    window.addEventListener('clippy:msn-status', e => {
-      document.querySelectorAll('[data-app-window="msn"] .status').forEach(s => { s.textContent = e.detail.text; });
-    });
 
     Clippy.init();
   </script>

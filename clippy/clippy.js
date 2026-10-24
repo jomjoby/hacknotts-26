@@ -43,7 +43,7 @@
     ],
     greeting_evening: [
       "Good evening{who}! I'm Clippy. Click me or press F1 whenever you need a hand.",
-      'Evening{who}! Prime MSN hours. Click me or press F1 if you need anything.',
+      'Evening{who}! Prime forum hours. Click me or press F1 if you need anything.',
       'Good evening{who}! Burning the midnight oil early? Click me or press F1 for help.',
       "Evening{who}! I've put on my best bend for the occasion. Click me or press F1.",
       'Good evening{who}! The night is young and so is this desktop. Press F1 if you need me.',
@@ -231,11 +231,11 @@
     joke_more: ['Another one', 'Go on, one more', 'Hit me again'],
     bored: [
       "Bored? In 2004 we'd have played Minesweeper for six hours straight.",
-      'Why not chat to someone on MSN? Or nudge them. That always goes well.',
+      'Why not chat to someone on FunForum? The Games channel never sleeps.',
       'Bored? You could reorganise your desktop icons. By colour.',
       "Let's do something! I could tell you a joke. Or ten.",
       'When I get bored, I hold things together. Usually paper.',
-      'Try changing your MSN status every 30 seconds. Very 2005.',
+      'Try posting in every FunForum channel. Very 2005.',
       "Boredom is just creativity in disguise. Or that's what my teacher said.",
     ],
     status_offer: [
@@ -245,12 +245,7 @@
       'Very 2005: "{status}"',
       'Your friends will love: "{status}"',
     ],
-    status_used: [
-      'Done! Sent it to MSN Messenger.',
-      'Status updated! Everyone will be so impressed.',
-      'Done. Prepare for the "wot does that mean??" messages.',
-    ],
-    cool_already: ['Clearly.', 'Fair. You are very cool.', 'Too cool for statuses. Got it.'],
+    cool_already: ['Clearly.', 'Fair. You are very cool.', 'Too cool for that. Got it.'],
     copied: ['Copied to your clipboard!', 'Copied! Paste away.', 'On your clipboard and ready to go.'],
     wallpaper: [
       'Ooh, fancy. New wallpaper coming up.',
@@ -540,14 +535,15 @@
 
   [
     {
-      id: 'msn', name: 'MSN Messenger', aliases: ['msn', 'messenger', 'msn messenger', 'chat'],
+      // FunForum (the team's forum, opened in the browser). It replaced MSN Messenger, so "msn" means it too.
+      id: 'forum', name: 'FunForum', aliases: ['funforum', 'fun forum', 'forum', 'chat', 'msn', 'messenger', 'msn messenger'],
       tips: [
-        { text: "It looks like you're about to chat! Want a properly 2000s status message?",
-          choices: [{ label: 'Yes please', cmd: 'give me an msn status' }, { label: "No, I'm cool already", run: () => line('cool_already') }] },
+        { text: "It looks like you're about to chat! Want a properly 2000s message to post?",
+          choices: [{ label: 'Yes please', cmd: 'give me something to post' }, { label: "No, I'm cool already", run: () => line('cool_already') }] },
         { text: 'Tip: a nudge is the polite way of saying REPLY TO ME RIGHT NOW.' },
         { text: 'Remember: appearing offline is the ultimate power move.' },
         { text: "Tip: if they've been typing for five minutes, it's either a love letter or an essay." },
-        { text: 'Fancy a new personal message? I write great ones.', choices: [{ label: 'Go on then', cmd: 'give me an msn status' }] },
+        { text: "Stuck for something to post? I write great ones.", choices: [{ label: 'Go on then', cmd: 'give me something to post' }] },
       ],
     },
     {
@@ -712,7 +708,7 @@
     react: ['damn', 'thats crazy', 'wow', 'lol', 'haha', 'omg', 'no way', 'cool', 'nice', 'interesting', 'wtf', 'bruh', 'fair enough', 'true', 'yeah', 'yh', 'mad', 'crazy', 'unreal', 'sick', 'lmao', 'oh', 'hmm', 'really', 'seriously', 'wild', 'thats mad', 'oh wow', 'thats insane'],
     settings: ['settings', 'change your brain', 'use ai', 'switch brain', 'turn on ai', 'use the ai', 'make you smarter', 'ai mode', 'change mode', 'use an api key', 'brain settings', 'classic mode', 'turn off ai', 'use claude', 'built in ai', 'forget my api key'],
     who: ['who are you', 'what are you', 'whats your name', 'are you a robot', 'are you an ai', 'tell me about yourself', 'are you alive', 'how do you think'],
-    open_app: ['open msn', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
+    open_app: ['open msn', 'open the forum', 'open funforum', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
     close_app: ['close msn', 'close notepad', 'quit the browser', 'exit messenger', 'shut notepad', 'kill the app', 'close this window', 'get rid of this window', 'close everything', 'close all windows', 'close it', 'close the program', 'shut it down'],
     whats_open: ['what is open', 'whats open', 'what apps are open', 'which windows are open', 'what am i running', 'whats running', 'list open windows', 'what have i got open', 'show open programs', 'what programs are running'],
     time: ['what time is it', 'whats the time', 'time please', 'current time', 'tell me the time', 'what time', 'got the time'],
@@ -720,7 +716,7 @@
     timer: ['set a timer', 'timer for 5 minutes', 'remind me in 10 minutes', 'remind me to drink water', 'set an alarm', 'countdown 30 seconds', 'alert me in an hour', 'wake me up in 20 minutes', 'start a timer', 'remind me later', 'set a reminder'],
     joke: ['tell me a joke', 'joke', 'make me laugh', 'say something funny', 'know any jokes', 'another joke', 'be funny', 'tell me something funny', 'another one', 'one more joke'],
     bored: ['im bored', 'i am bored', 'nothing to do', 'entertain me', 'what should i do', 'boring', 'suggest something', 'so bored'],
-    status: ['give me an msn status', 'status idea', 'make me a status', 'cool msn name', 'what should my status be', 'give me a display name', 'personal message idea', 'emo status', 'another status', 'new status', 'msn status'],
+    status: ['give me something to post', 'what should i post', 'post idea', 'forum post idea', 'give me an msn status', 'status idea', 'make me a status', 'cool msn name', 'what should my status be', 'give me a display name', 'personal message idea', 'emo status', 'another status', 'new status', 'msn status'],
     wallpaper: ['change wallpaper', 'new background', 'change the background', 'different wallpaper', 'change desktop picture', 'next wallpaper', 'change the desktop background'],
     letter: ['write a letter', 'help me write a letter', 'letter template', 'help me write', 'write an email', 'draft a letter', 'start a letter', 'write a cover letter'],
     notes: ['show my notes', 'what are my notes', 'read my notes', 'list notes', 'what did i ask you to remember', 'clear my notes', 'delete my notes', 'my notes'],
@@ -736,7 +732,7 @@
   const LABELS = {
     greet: 'Just saying hi', help: 'See what you can do', who: 'Tell me about you', open_app: 'Open a program',
     close_app: 'Close a program', whats_open: "See what's open", time: 'Tell me the time', date: "Tell me today's date",
-    timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get an MSN status',
+    timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get something to post',
     wallpaper: 'Change the wallpaper', letter: 'Write a letter', notes: 'Show my notes', name_get: 'Say my name',
     quiet: 'Fewer tips', chatty: 'More tips', hide: 'Hide Clippy', thanks: 'Say thanks',
     voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting', settings: 'Change your brain',
@@ -840,6 +836,7 @@
 
   // ------------------------------------------------------------ small tasks
 
+  // A properly 2000s message, MSN-status style.
   function msnStatus() {
     const [left, right] = pick([['~*~', '~*~'], ['xXx', 'xXx'], ['.::', '::.'], ['<3', '<3'], ['*~', '~*'], ['-=', '=-']]);
     let text = pick([
@@ -917,7 +914,7 @@
     store.set('chattiness', level);
   }
 
-  const EXAMPLES = ['Open MSN', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me an MSN status', 'Write a letter', "What's open?", 'Turn on your voice', 'Tell me a joke'];
+  const EXAMPLES = ['Open FunForum', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me something to post', 'Write a letter', "What's open?", 'Turn on your voice', 'Tell me a joke'];
 
   // Each intent returns a reply: a string, or { text, choices: [{ label, cmd } | { label, run }] }.
   const INTENTS = {
@@ -964,16 +961,15 @@
     joke: () => ({ text: line('jokes'), choices: [{ label: pick(LINES.joke_more), cmd: 'tell me a joke' }] }),
     bored: () => ({
       text: line('bored'),
-      choices: [{ label: 'Open MSN', cmd: 'open msn' }, { label: 'Tell me a joke', cmd: 'tell me a joke' }],
+      choices: [{ label: 'Open FunForum', cmd: 'open funforum' }, { label: 'Tell me a joke', cmd: 'tell me a joke' }],
     }),
     status: () => {
       const status = msnStatus();
       return {
         text: line('status_offer', { status }),
         choices: [
-          { label: 'Use it', run: () => { window.dispatchEvent(new CustomEvent('clippy:msn-status', { detail: { text: status } })); return line('status_used'); } },
-          { label: 'Another one', cmd: 'another status' },
           { label: 'Copy it', run: () => copyText(status) },
+          { label: 'Another one', cmd: 'another status' },
         ],
       };
     },
@@ -1057,7 +1053,7 @@
     const action = understand(text);
     if (action && !(CHAT_INTENTS.has(action.intent) && aiReady())) return action();
 
-    // "open msn and tell me a joke": do each part, but only if every part makes sense.
+    // "open funforum and tell me a joke": do each part, but only if every part makes sense.
     const parts = text.split(/\s*,?\s+(?:and then|and|then)\s+/i);
     if (!action && parts.length > 1) {
       const actions = parts.map(understand);
@@ -1232,7 +1228,7 @@
     const open = openApps.size ? list([...openApps.keys()].map(appName)) : 'nothing';
     const commands = [
       ...Object.values(apps).flatMap(a => [`open ${a.name}`, `close ${a.name}`]),
-      'close everything', 'change the wallpaper', 'give me an msn status', 'write a letter',
+      'close everything', 'change the wallpaper', 'give me something to post', 'write a letter',
       'remind me in <number> minutes to <task>', 'tell me a joke',
     ];
     return [

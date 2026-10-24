@@ -2,7 +2,7 @@
  * RetroBrowser: a Firefox-on-Windows-7 style web browser for the HackNotts 26 OS.
  *
  * "Websites" are HTML files in this repo, registered with an address
- * (e.g. messenger.msn.com -> msn/index.html) and shown in iframes, one per tab.
+ * (e.g. www.funforum.co.uk -> fhome.html) and shown in iframes, one per tab.
  * Unknown addresses get a retro "Server not found" page; anything that isn't
  * an address goes to a fake search engine.
  *
@@ -72,7 +72,7 @@
   const looksLikeAddress = text => !/\s/.test(text.trim()) && /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(normalise(text));
 
   // { address, aliases, title, src, description, icon, app }
-  // app: an app id (like 'msn') announced to Clippy while the site is on screen.
+  // app: an app id (like 'forum') announced to Clippy while the site is on screen.
   function registerSite(site) {
     const entry = Object.assign({ aliases: [], description: '', icon: '' }, site);
     entry.address = normalise(entry.address);
@@ -95,28 +95,22 @@
     description: 'The finest portal on the information superhighway. News, chat, search and more.',
   });
 
-  // FunForum: the team's community forum (fhome.html etc. at the repo root). Each page gets
-  // its own address so the address bar follows the forum's own links.
+  // FunForum: the team's community forum and chat (fhome.html etc. at the repo root). It took
+  // over from MSN Messenger, so the old MSN addresses lead here too. Each page gets its own
+  // address so the address bar follows the forum's own links.
   const FORUM_DESCRIPTION = 'The friendliest community chat on the web. General, Games, Movies & TV and Sports channels.';
   registerSite({
     address: 'www.funforum.co.uk',
-    aliases: ['funforum', 'fun forum', 'forum', 'funforum.co.uk', 'www.funforum.com', 'funforum.com'],
+    aliases: ['funforum', 'fun forum', 'forum', 'funforum.co.uk', 'www.funforum.com', 'funforum.com',
+      'msn', 'msn.com', 'www.msn.com', 'messenger', 'msn messenger', 'messenger.msn.com', 'chat'],
     title: 'FunForum',
     src: 'fhome.html',
     description: FORUM_DESCRIPTION,
+    app: 'forum',
   });
-  registerSite({ address: 'www.funforum.co.uk/forum', title: 'FunForum - Forum', src: 'forum.html', description: FORUM_DESCRIPTION });
-  registerSite({ address: 'www.funforum.co.uk/news', title: 'FunForum - News', src: 'fabout.html', description: FORUM_DESCRIPTION });
-  registerSite({ address: 'www.funforum.co.uk/login', title: 'FunForum - Login', src: 'flog.html', description: FORUM_DESCRIPTION });
-
-  registerSite({
-    address: 'messenger.msn.com',
-    aliases: ['msn', 'msn.com', 'www.msn.com', 'messenger', 'msn messenger', 'messenger.msn.co.uk'],
-    title: 'MSN Messenger',
-    src: 'msn/index.html',
-    description: 'Chat with your friends online. Nudges, winks and personal messages included.',
-    app: 'msn',
-  });
+  registerSite({ address: 'www.funforum.co.uk/forum', title: 'FunForum - Forum', src: 'forum.html', description: FORUM_DESCRIPTION, app: 'forum' });
+  registerSite({ address: 'www.funforum.co.uk/news', title: 'FunForum - News', src: 'fabout.html', description: FORUM_DESCRIPTION, app: 'forum' });
+  registerSite({ address: 'www.funforum.co.uk/login', title: 'FunForum - Login', src: 'flog.html', description: FORUM_DESCRIPTION, app: 'forum' });
 
   // -------------------------------------------------------------- helpers
 
@@ -175,7 +169,7 @@
       <ul>
         <li>Check the address for typing errors such as <b>ww</b>.example.com instead of <b>www</b>.example.com.</li>
         <li>Check your modem is plugged in, and that nobody has picked up the phone.</li>
-        <li>Our own sites always work: try <a data-goto="www.nottsnet.co.uk">NottsNet</a> or <a data-goto="messenger.msn.com">MSN Messenger</a>.</li>
+        <li>Our own sites always work: try <a data-goto="www.nottsnet.co.uk">NottsNet</a> or <a data-goto="www.funforum.co.uk">FunForum</a>.</li>
       </ul>
       <p><button onclick="location.reload()">Try Again</button></p></div></body></html>`;
   }
@@ -367,7 +361,6 @@
 
   const BOOKMARKS = [
     { label: 'NottsNet', address: 'www.nottsnet.co.uk' },
-    { label: 'MSN Messenger', address: 'messenger.msn.com' },
     { label: 'FunForum', address: 'www.funforum.co.uk' },
     { label: 'Google', address: 'www.google.com' },
     { label: 'YouTube', address: 'www.youtube.com' },
@@ -824,7 +817,7 @@
   }
 
   // Make links and search forms inside pages drive the browser.
-  //   <a data-goto="messenger.msn.com">  opens one of our sites
+  //   <a data-goto="www.funforum.co.uk"> opens one of our sites
   //   <a href="http://...">             goes through the browser too (usually "Server not found")
   //   <form data-search><input name="q"> searches Notts Search
   function hookPage(tab, doc) {
@@ -868,7 +861,7 @@
     }
   }
 
-  // Tell Clippy (and anything else listening) when an app like MSN is on screen in a tab.
+  // Tell Clippy (and anything else listening) when an app like FunForum is on screen in a tab.
   function announceApp(tab, app, title) {
     if (tab.app === app) return;
     if (tab.app) window.dispatchEvent(new CustomEvent('os:app-closed', { detail: { id: tab.app } }));
@@ -947,7 +940,7 @@
         el.addEventListener('dblclick', () => open());
       });
     }
-    // Clippy can open and close the browser, and MSN lives inside it.
+    // Clippy can open and close the browser, and FunForum lives inside it.
     window.addEventListener('clippy:open-app', e => {
       const id = (e.detail || {}).id;
       if (id === 'browser') open();

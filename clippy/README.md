@@ -20,16 +20,16 @@ Pick either option (or both):
 
 1. **Zero effort:** give each app window the attribute `data-app-window="<id>"`. Clippy notices when one appears, disappears or is hidden.
    ```html
-   <div class="window" data-app-window="msn">...</div>
+   <div class="window" data-app-window="forum">...</div>
    ```
 2. **Events:** fire these on `window` when things happen:
    ```js
-   window.dispatchEvent(new CustomEvent('os:app-opened', { detail: { id: 'msn', title: 'MSN Messenger' } }));
-   window.dispatchEvent(new CustomEvent('os:app-closed', { detail: { id: 'msn' } }));
-   window.dispatchEvent(new CustomEvent('os:app-focused', { detail: { id: 'msn' } }));
+   window.dispatchEvent(new CustomEvent('os:app-opened', { detail: { id: 'forum', title: 'FunForum' } }));
+   window.dispatchEvent(new CustomEvent('os:app-closed', { detail: { id: 'forum' } }));
+   window.dispatchEvent(new CustomEvent('os:app-focused', { detail: { id: 'forum' } }));
    ```
 
-Built-in app ids: `msn`, `notepad`, `browser`, `computer`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
+Built-in app ids: `forum` (FunForum, also answers to "msn"), `notepad`, `browser`, `computer`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
 
 ```js
 Clippy.registerApp({
@@ -47,16 +47,15 @@ Expose these on `window.OS` and Clippy will call them. If they're missing, Clipp
 | Open an app         | `OS.openApp(id)`         | `clippy:open-app` `{ id }`          |
 | Close an app        | `OS.closeApp(id)`        | `clippy:close-app` `{ id }`         |
 | Change wallpaper    | `OS.setWallpaper()`      | `clippy:wallpaper`                  |
-| Set an MSN status   | n/a                      | `clippy:msn-status` `{ text }`      |
 
 For "write a letter", Clippy types into the focused text box, or into a `textarea` inside `[data-app-window="notepad"]`.
 
 ## Things to try
 
-- "Open MSN and tell me a joke"
+- "Open FunForum and tell me a joke"
 - "What's 12 x (7 + 3)?"
 - "Remind me in 5 minutes to drink my water"
-- "Give me an MSN status" (then "Use it")
+- "Give me something to post" (a 2000s-style message, then "Copy it")
 - "Write a letter", or type "Dear Sam," in any text box
 - "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
 - "What's open?", "Close everything", "Change the wallpaper"
@@ -77,7 +76,7 @@ Click the cog in Clippy's bubble, or type "settings", to choose:
 | **Built-in AI** | Llama 3.2 1B running inside the browser with [WebLLM](https://github.com/mlc-ai/web-llm). Free, private, nothing sent anywhere. | Chrome or Edge with WebGPU. ~1GB download the first time, then cached. |
 | **Claude** | Claude via the Anthropic API. The smartest option. | An Anthropic API key, pasted into Clippy. Stored only in that browser's localStorage. |
 
-In the AI brains, clear commands ("open MSN", timers, maths) are still handled instantly by the classic brain; the AI handles chat and anything it doesn't recognise, and can trigger the same actions itself. Clippy remembers the last few messages so follow-ups like "damn" make sense.
+In the AI brains, clear commands ("open FunForum", timers, maths) are still handled instantly by the classic brain; the AI handles chat and anything it doesn't recognise, and can trigger the same actions itself. Clippy remembers the last few messages so follow-ups like "damn" make sense.
 
 To start in the built-in AI brain by default: `Clippy.init({ brain: 'local' })`. **Never put an API key in the code**: this repo is public.
 
