@@ -96,14 +96,26 @@ body {
 
 }
 
+
+
+.desktop-space {
+    display: grid;
+    grid-template-columns: repeat(6, 80px);
+    grid-auto-rows: 90px;
+    gap: 15px;
+    padding: 20px;
+    justify-content: start;
+    align-content: start;
+}
+
 .desktop-icon {
 
     
 
     width: 70px;
     height: 70px;
-
+/* 
     position: fixed;
     top: 20px;
-    left: 20px;
+    left: 20px; */
 }
