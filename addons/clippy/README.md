@@ -2,8 +2,6 @@
 
 An offline desktop assistant for our Windows 7-style OS. No AI API or keys: it understands requests with its own small intent classifier (Naive Bayes, trained on example phrases in `clippy.js`), watches what you do on the desktop, and can do small tasks for you.
 
-`demo.html` is a throwaway test desktop for trying Clippy on its own. It is **not** the real OS.
-
 ## Adding Clippy to the OS
 
 One line in the `<head>` of `index.html` loads Clippy (and the retro browser):
@@ -29,7 +27,7 @@ Pick either option (or both):
    window.dispatchEvent(new CustomEvent('os:app-focused', { detail: { id: 'forum' } }));
    ```
 
-Built-in app ids: `forum` (FunForum, also answers to "msn"), `notepad`, `browser`, `computer`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
+Built-in app ids: `forum` (FunForum, also answers to "msn") and `browser`. Register new apps (e.g. the third app) so Clippy can open them by name and give tips:
 
 ```js
 Clippy.registerApp({
@@ -48,7 +46,7 @@ Expose these on `window.OS` and Clippy will call them. If they're missing, Clipp
 | Close an app        | `OS.closeApp(id)`        | `clippy:close-app` `{ id }`         |
 | Change wallpaper    | `OS.setWallpaper()`      | `clippy:wallpaper`                  |
 
-For "write a letter", Clippy types into the focused text box, or into a `textarea` inside `[data-app-window="notepad"]`.
+For "write a letter", Clippy types into the last text box you clicked into.
 
 ## Things to try
 
@@ -84,13 +82,3 @@ Everything Clippy says is in the `LINES` table at the top of `clippy.js`. Add li
 ## Other JS API
 
 `Clippy.say(text)`, `Clippy.ask(text)`, `Clippy.open()`, `Clippy.show()`, `Clippy.hide()`, `Clippy.understand(text)` (debug: shows what Clippy thinks a sentence means).
-
-## Running the test desktop
-
-The scripts need to be served over http rather than opened as a file:
-
-```bash
-python3 -m http.server 8026
-```
-
-Then open http://localhost:8026/addons/clippy/demo.html

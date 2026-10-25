@@ -20,7 +20,7 @@ One line in the `<head>` of `index.html` loads both the browser and Clippy:
 <script src="addons/addons.js" defer></script>
 ```
 
-All the settings live in [`addons/addons.js`](../addons.js), so changing them never touches the OS's files. To test the browser on its own, open `addons/browser/demo.html` instead (through a local server: run `sh start.sh` and go to http://localhost:8000/addons/browser/demo.html).
+All the settings live in [`addons/addons.js`](../addons.js), so changing them never touches the OS's files.
 
 ## Settings
 

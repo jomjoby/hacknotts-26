@@ -261,11 +261,6 @@
       'There you go, one letter, fresh off the press. Just fill in the blanks.',
       "I've written the boring bits. You do the important bits.",
     ],
-    letter_opening: [
-      'Opening Notepad and starting a letter for you...',
-      "Let's write a letter! Opening Notepad...",
-      'One letter coming up. Opening Notepad first...',
-    ],
     letter_nowhere: ['Click into a text box first, then ask me again!', 'Where should I write it? Click into a text box first.'],
     letter_tip: [
       "It looks like you're writing a letter! Would you like help?",
@@ -386,6 +381,45 @@
     colour_unknown: ["I don't know that colour. Try one of these: {list}."],
     wallpaper_set: ['New wallpaper: {name}. Very stylish.', 'Redecorated! Say hello to {name}.', "Wallpaper changed to {name}. Don't you look nice."],
     no_app: ["That isn't running right now, sorry!"],
+    many_windows: [
+      "That's a lot of windows! Want me to tidy up?",
+      'Whoa, window party! Want me to close some?',
+      'Your desktop is getting crowded. Shall I tidy up?',
+    ],
+    multitasker: ['Respect.', 'A true multitasker!', 'Fair. More windows, more fun.'],
+    opened_unknown: [
+      'It looks like you opened {app}. Need a hand with anything?',
+      'Ooh, {app}! Let me know if you need help.',
+      '{app}, nice! Shout if you need me.',
+      "I see you opened {app}. I'm here if you get stuck.",
+    ],
+    caps: [
+      'WHY ARE WE SHOUTING? (Psst, Caps Lock might be on.)',
+      'Is Caps Lock on, or are you just very excited?',
+      'INDOOR VOICE, PLEASE. (Caps Lock?)',
+      'Ooh, capitals. Is Caps Lock stuck?',
+    ],
+    rage: [
+      'Whoa, easy on the mouse! Is something not responding?',
+      'Click click click! Everything OK there?',
+      "That's a lot of clicking. Is something stuck?",
+      'Steady on! Want a hand with something?',
+    ],
+    rage_reply: [
+      'Classic. Try closing it and opening it again. It fixed everything in 2004 too.',
+      'Have you tried turning it off and on again?',
+      'Deep breaths. Try closing it and reopening it.',
+    ],
+    wake: [
+      "Oh! I wasn't asleep. I was defragmenting.",
+      '*yawn* Sorry, I was dreaming about floppy disks.',
+      "Huh? I'm up! I'm up!",
+      'Welcome back! I may have dozed off.',
+      'Oh, hello! I was just resting my eyes.',
+      "You're back! I wasn't snoring, was I?",
+      'Zzz... wha? Oh, hi!',
+      'Back already? I was mid-dream about a stapler.',
+    ],
     cancelled: ['No worries, cancelled.', 'Okay, forget I asked.', 'Cancelled. I never liked that idea anyway.'],
     offer_forum: ['Sounds like FunForum! I can make a thread for you. Want me to?', 'FunForum? I can start a thread, show you the news or just open it.'],
     ask_title: ['What should the thread be called?', "Ooh, a new thread! What's the title?", 'Righto. What do you want to call it?'],
@@ -519,17 +553,6 @@
       ],
     },
     {
-      id: 'notepad', name: 'Notepad', aliases: ['notepad', 'text editor', 'notes app'],
-      tips: [
-        { text: "It looks like you're about to write something! I can start a letter for you.",
-          choices: [{ label: 'Start a letter', cmd: 'write a letter' }] },
-        { text: 'Tip: type "Dear ..." and I\'ll leap into action.' },
-        { text: 'Notepad! Simple, reliable, no fonts. Just how I like it.' },
-        { text: 'Tip: ask me to "write a letter" and I\'ll do the boring bits.' },
-        { text: 'Writing for a while? I can remind you to take a break.', choices: [{ label: 'Remind me in 25 minutes', cmd: 'remind me in 25 minutes to take a break' }] },
-      ],
-    },
-    {
       id: 'browser', name: 'Internet Explorer', aliases: ['internet explorer', 'ie', 'browser', 'internet', 'web', 'explorer'],
       tips: [
         { text: 'Ah, the information superhighway. Remember: never download free_ram.exe.' },
@@ -537,15 +560,6 @@
         { text: 'Tip: never trust a website with five flashing DOWNLOAD buttons.' },
         { text: 'Surfing the web! Mind the pop-ups.' },
         { text: 'Tip: if a page starts playing music on its own, run.' },
-      ],
-    },
-    {
-      id: 'computer', name: 'My Computer', aliases: ['my computer', 'computer', 'files', 'documents', 'my documents'],
-      tips: [
-        { text: "Looking for a file? It's in My Documents. It's always in My Documents." },
-        { text: 'Ah, My Computer. Where files go to be forgotten.' },
-        { text: 'Tip: "New Folder (7)" is not a filing system.' },
-        { text: 'Your C: drive is looking... full of potential.' },
       ],
     },
   ].forEach(registerApp);
@@ -681,8 +695,8 @@
     news: ['show me the news', 'open the news', 'whats the news', 'latest news', 'forum news', 'any news', 'read the news', 'whats new on the forum', 'news'],
     react: ['damn', 'thats crazy', 'wow', 'lol', 'haha', 'omg', 'no way', 'cool', 'nice', 'interesting', 'wtf', 'bruh', 'fair enough', 'true', 'yeah', 'yh', 'mad', 'crazy', 'unreal', 'sick', 'lmao', 'oh', 'hmm', 'really', 'seriously', 'wild', 'thats mad', 'oh wow', 'thats insane'],
     who: ['who are you', 'what are you', 'whats your name', 'are you a robot', 'are you an ai', 'tell me about yourself', 'are you alive', 'how do you think'],
-    open_app: ['open msn', 'open the forum', 'open funforum', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
-    close_app: ['close msn', 'close notepad', 'quit the browser', 'exit messenger', 'shut notepad', 'kill the app', 'close this window', 'get rid of this window', 'close everything', 'close all windows', 'close it', 'close the program', 'shut it down'],
+    open_app: ['open msn', 'open the forum', 'open funforum', 'open paint', 'launch the browser', 'start messenger', 'run paint', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open the music player', 'start the program', 'launch', 'open the web browser', 'open control panel'],
+    close_app: ['close msn', 'close paint', 'quit the browser', 'exit messenger', 'shut paint', 'kill the app', 'close this window', 'get rid of this window', 'close everything', 'close all windows', 'close it', 'close the program', 'shut it down'],
     whats_open: ['what is open', 'whats open', 'what apps are open', 'which windows are open', 'what am i running', 'whats running', 'list open windows', 'what have i got open', 'show open programs', 'what programs are running'],
     time: ['what time is it', 'whats the time', 'time please', 'current time', 'tell me the time', 'what time', 'got the time'],
     date: ['what day is it', 'whats the date', 'todays date', 'what is the date today', 'which day is it', 'date', 'what is today'],
@@ -838,35 +852,15 @@
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  function waitFor(selector, timeout = 2000) {
-    return new Promise(resolve => {
-      const start = Date.now();
-      (function check() {
-        const el = document.querySelector(selector);
-        if (el || Date.now() - start > timeout) resolve(el);
-        else setTimeout(check, 100);
-      })();
-    });
-  }
-
   const letterTemplate = () =>
     `Dear [name],\n\nI hope this finds you well. I'm writing to [reason].\n\n[The important bit goes here.]\n\nYours sincerely,\n${state.name || '[Your name]'}`;
 
-  const NOTEPAD_EDITOR = '[data-app-window="notepad"] textarea, [data-app-window="notepad"] [contenteditable="true"]';
-
   function writeLetter() {
-    const target = (state.lastEditable && state.lastEditable.isConnected && state.lastEditable) || document.querySelector(NOTEPAD_EDITOR);
-    if (target) {
-      const current = target.isContentEditable ? target.innerText : target.value;
-      insertText(target, (current.trim() ? '\n\n' : '') + letterTemplate());
-      return line('letter_done');
-    }
-    if (!apps.notepad) return line('letter_nowhere');
-    openApp('notepad');
-    waitFor(NOTEPAD_EDITOR).then(el => {
-      if (el) insertText(el, letterTemplate());
-    });
-    return line('letter_opening');
+    const target = state.lastEditable && state.lastEditable.isConnected && state.lastEditable;
+    if (!target) return line('letter_nowhere');
+    const current = target.isContentEditable ? target.innerText : target.value;
+    insertText(target, (current.trim() ? '\n\n' : '') + letterTemplate());
+    return line('letter_done');
   }
 
   function setName(raw) {

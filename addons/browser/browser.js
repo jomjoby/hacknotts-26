@@ -195,15 +195,6 @@
       <p>Please check back later, or go back to <a data-goto="www.nottsnet.co.uk">NottsNet</a>.</p></div></body></html>`;
   }
 
-  const JOKE_RESULTS = [
-    { title: 'Free RAM Download - 100% Legit!!!', address: 'www.downloadmoreram.biz', description: 'Double your computer speed instantly. No viruses (probably).' },
-    { title: 'Crazy Frog Ringtones - Text FROG to 87121', address: 'www.ringtones4u.co.uk', description: 'The hottest polyphonic ringtones for your Nokia 3310.' },
-    { title: "Clippy's Fan Club - Members Area", address: 'www.clippyfans.org', description: 'It looks like you are searching for fun. Would you like help with that?' },
-  ];
-
-  // Made-up sites from our pages: these get "Server not found" rather than a Wayback lookup.
-  const FAKE_SITES = new Set(JOKE_RESULTS.map(r => r.address));
-
   async function getJson(url, timeout = 6000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
@@ -271,7 +262,7 @@
 
     const addresses = new Set();
     const results = [...ours, ...famous, ...web].filter(r => !addresses.has(r.address) && addresses.add(r.address));
-    const all = [...results, JOKE_RESULTS[Math.floor(Math.random() * JOKE_RESULTS.length)]];
+    const all = results;
 
     const item = r => `
       <a class="result" data-goto="${escapeHtml(r.address)}">
@@ -378,7 +369,6 @@
     { label: 'YouTube', address: 'www.youtube.com' },
     { label: 'MySpace', address: 'www.myspace.com' },
     { label: 'BBC News', address: 'news.bbc.co.uk' },
-    { label: 'Free Ringtones!!!', address: 'www.ringtones4u.co.uk' },
   ];
 
   const $ = sel => win.el.querySelector(sel);
@@ -739,7 +729,6 @@ function close() {
     const owner = findSite(host);
     if (owner && owner.paths) return { kind: 'site', site: owner.address, address, hash: address.slice(address.indexOf('/') + 1) };
     if (owner) return { kind: 'missing', address }; // a page we haven't built on a site we have
-    if (FAKE_SITES.has(host)) return { kind: 'error', address };
     if (LIVE_HOSTS.test(host)) return { kind: 'live', address, title: decode(address.split('/').pop()).replace(/_/g, ' ') };
     const famous = famousFor(address);
     const year = famous ? famous[1] : config.year;
