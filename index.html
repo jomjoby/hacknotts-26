@@ -35,14 +35,17 @@
         </div>
         
         <div class="taskbar">
-            <div class="taskbar-btn" onclick="startMenu()">
+            <div class="taskbar-btn start-orb" onclick="startMenu()">
                 <image src="images/Windows_7-Logo.wine.png">
             </div>
+
 
             <div class="taskbar-clock">
                 <span id="clock-time">00:00</span>
                 <span id="clock-date">01/01/2026</span>
             </div>
+
+            <div class="show-desktop" title="Show desktop"></div>
 
         </div>
 
@@ -72,11 +75,13 @@
     <div class="start-right">
 
         <button onclick="openApp('documents')">
-            📁 Documents
+            Documents
         </button>
 
+        <hr>
+
         <button onclick="openApp('control-panel')">
-            ⚙️ Control Panel
+            Control Panel
         </button>
     </div>
 

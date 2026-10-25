@@ -1,12 +1,6 @@
 
 function startMenu() {
-    const menu = document.getElementById("start-menu");
-
-    if (menu.style.display === "block") {
-        menu.style.display = "none";
-    } else {
-        menu.style.display = "block";
-    }
+    document.getElementById("start-menu").classList.toggle("open");
 }
 
 function shutDown() {
@@ -15,7 +9,7 @@ function shutDown() {
 
 function openApp(app) {
     // Like Windows 7, launching something closes the start menu.
-    document.getElementById("start-menu").style.display = "none";
+    document.getElementById("start-menu").classList.remove("open");
 
     switch (app) {
         case "firefox":
@@ -61,7 +55,7 @@ const CAPTION_ICONS = {
     close: '<svg viewBox="0 0 10 10"><path d="m0 1.5 1.5-1.5L5 3.5 8.5 0 10 1.5 6.5 5 10 8.5 8.5 10 5 6.5 1.5 10 0 8.5 3.5 5z"/></svg>',
 };
 
-const TASKBAR_SPACE = 80; // the taskbar's height plus its gap, kept clear when maximised
+const TASKBAR_SPACE = 45; // the taskbar's height plus its gap, kept clear when maximised
 
 // The highest window on screen (OS windows and the browser share one stack).
 function topZIndex() {

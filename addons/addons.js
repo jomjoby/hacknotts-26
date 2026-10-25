@@ -43,7 +43,7 @@
     .then(() => {
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.
-      window.Clippy.init({ bottom: 80 });
+      window.Clippy.init({ bottom: 45 });
       window.Clippy.registerApp({
         id: 'paint',
         name: 'Paint',
@@ -76,7 +76,7 @@
       window.RetroBrowser.init({
         taskbar: '.taskbar',
         icon: root + 'images/Mozilla_Firefox_logo_2004.webp',
-        bottom: 80,
+        bottom: 45,
         base: root,
       });
       window.SettingsApp.applySaved();
