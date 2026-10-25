@@ -383,15 +383,17 @@
 
   const $ = sel => win.el.querySelector(sel);
 
-  function open(address) {
-    if (!win) build(address || config.homepage);
-    else if (address) navigate(address);
+  // extra (optional) is added to the page's history entry, e.g. { hash: 'games/new' } opens one
+  // of our own pages at a particular spot (Clippy uses this).
+  function open(address, extra) {
+    if (!win) build(address || config.homepage, extra);
+    else if (address) navigate(address, win.active, extra);
     restore();
     focusWindow();
     return win.el;
   }
 
-  function build(firstAddress) {
+  function build(firstAddress, extra) {
     const el = document.createElement('section');
     el.className = 'rb-window';
     el.dataset.appWindow = 'browser';
@@ -449,7 +451,7 @@
     setUpDragging();
     setUpResizing();
     addTaskbarButton();
-    newTab(firstAddress);
+    newTab(firstAddress, extra);
   }
 
 function close() {
@@ -601,7 +603,7 @@ function close() {
 
   // ------------------------------------------------------------------- tabs
 
-  function newTab(address) {
+  function newTab(address, extra) {
     const tab = { id: ++tabCounter, history: [], index: -1, title: 'New Tab', icon: GLOBE, loading: false, app: null };
 
     tab.tabEl = document.createElement('div');
@@ -622,7 +624,7 @@ function close() {
 
     win.tabs.push(tab);
     selectTab(tab);
-    if (address) navigate(address, tab);
+    if (address) navigate(address, tab, extra);
     return tab;
   }
 
@@ -744,10 +746,10 @@ function close() {
     return { kind: 'web', address, year, title: `${famous ? famous[2] : host} (${year})` };
   }
 
-  function navigate(input, tab = win && win.active) {
-    if (!win) { open(input); return; }
+  function navigate(input, tab = win && win.active, extra) {
+    if (!win) { open(input, extra); return; }
     const entry = entryFor(input);
-    if (entry) go(tab, entry);
+    if (entry) go(tab, Object.assign(entry, extra));
   }
 
   function go(tab, entry) {
@@ -911,9 +913,13 @@ function close() {
         if (msg.title) { tab.title = String(msg.title); updateChrome(); }
         return;
       }
-      tab.history = tab.history.slice(0, tab.index + 1);
-      tab.history.push(entry);
-      tab.index++;
+      if (msg.replace) {
+        tab.history[tab.index] = entry;
+      } else {
+        tab.history = tab.history.slice(0, tab.index + 1);
+        tab.history.push(entry);
+        tab.index++;
+      }
       if (msg.title) tab.title = String(msg.title);
       updateChrome();
     } else if (msg.action === 'search' && msg.query) {
@@ -1024,7 +1030,7 @@ function close() {
 
   window.RetroBrowser = {
     init,
-    open,
+    open: (address, extra) => open(address, extra),
     close,
     navigate: address => (win ? navigate(address) : open(address)),
     newTab: address => (win ? newTab(address || config.homepage) : open(address)),

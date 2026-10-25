@@ -370,6 +370,22 @@
       "No idea, I'm afraid. But I'm great at maths and timers!",
       "My wire's in a twist. Could you say that differently?",
     ],
+    forum_thread: [
+      'Opening FunForum on {section}. Fill in the rest and press Post thread!',
+      'Off to {section}! Your new thread is ready to write.',
+      "Here's {section} on FunForum, with a new thread started for you.",
+    ],
+    forum_login: [' (Log in to FunForum first, or it won\'t let you post.)'],
+    forum_which: ['Which section should the thread go in?', 'Sure! Which section?'],
+    youtube_random: ["Here's a random classic. Enjoy!", 'Picking a random 2000s classic...', 'Random video coming right up. No refunds.'],
+    youtube_search: ['Searching YouTube for "{query}"...', 'To the YouTubes! Looking for "{query}".'],
+    web_search: ['Searching the web for "{query}"...', 'Let me look that up on Notts Search...', 'Dialling up the search engine for "{query}"...'],
+    news: ["Here's the latest from FunForum News.", 'Hot off the press!', 'Opening the news. Stop the presses!'],
+    purble_game: ['Opening {game}. Good luck!', '{game}? My favourite! Opening it now.', 'Off to {game}. Have fun!'],
+    colour_set: ['Done! Your windows are now {colour}.', '{colour} it is. Very fetching.', 'Windows painted {colour}!'],
+    colour_unknown: ["I don't know that colour. Try one of these: {list}."],
+    wallpaper_set: ['New wallpaper: {name}. Very stylish.', 'Redecorated! Say hello to {name}.', "Wallpaper changed to {name}. Don't you look nice."],
+    no_app: ["That isn't running right now, sorry!"],
     react: [
       'I know, right?',
       "Wild, isn't it?",
@@ -639,6 +655,8 @@
   const TRAINING = {
     greet: ['hi', 'hello', 'hey', 'hiya', 'yo', 'good morning', 'good afternoon', 'good evening', 'sup', 'whats up', 'hey clippy', 'hello there'],
     help: ['help', 'what can you do', 'what do you do', 'how do you work', 'show me what you can do', 'commands', 'i need help', 'options', 'what are your features', 'how do i use you', 'do something', 'can you do smth', 'do smth', 'what else can you do', 'anything else'],
+    youtube_random: ['open a random youtube video', 'random youtube video', 'play a random video', 'show me a random video', 'play something on youtube', 'surprise me with a video', 'random video', 'show me a youtube video', 'watch a video', 'play a video'],
+    news: ['show me the news', 'open the news', 'whats the news', 'latest news', 'forum news', 'any news', 'read the news', 'whats new on the forum', 'news'],
     react: ['damn', 'thats crazy', 'wow', 'lol', 'haha', 'omg', 'no way', 'cool', 'nice', 'interesting', 'wtf', 'bruh', 'fair enough', 'true', 'yeah', 'yh', 'mad', 'crazy', 'unreal', 'sick', 'lmao', 'oh', 'hmm', 'really', 'seriously', 'wild', 'thats mad', 'oh wow', 'thats insane'],
     who: ['who are you', 'what are you', 'whats your name', 'are you a robot', 'are you an ai', 'tell me about yourself', 'are you alive', 'how do you think'],
     open_app: ['open msn', 'open the forum', 'open funforum', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
@@ -668,7 +686,7 @@
     timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get something to post',
     wallpaper: 'Change the wallpaper', letter: 'Write a letter', notes: 'Show my notes', name_get: 'Say my name',
     quiet: 'Fewer tips', chatty: 'More tips', hide: 'Hide Clippy', thanks: 'Say thanks',
-    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting',
+    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting', youtube_random: 'Play a random YouTube video', news: 'Show me the news',
   };
 
   const classifier = new IntentClassifier();
@@ -847,7 +865,7 @@
     store.set('chattiness', level);
   }
 
-  const EXAMPLES = ['Open FunForum', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me something to post', 'Write a letter', "What's open?", 'Turn on your voice', 'Tell me a joke'];
+  const EXAMPLES = ['Make a thread called best Wii games in Games', 'Open a random YouTube video', 'Search the web for Nottingham', 'Show me the news', 'Play cakes', 'Make the windows pumpkin', 'Change the wallpaper', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Tell me a joke'];
 
   // Each intent returns a reply: a string, or { text, choices: [{ label, cmd } | { label, run }] }.
   const INTENTS = {
@@ -901,15 +919,19 @@
       return {
         text: line('status_offer', { status }),
         choices: [
+          { label: 'Post it on FunForum', run: () => forumThread('general', '', status) },
           { label: 'Copy it', run: () => copyText(status) },
           { label: 'Another one', cmd: 'another status' },
         ],
       };
     },
     wallpaper: () => {
+      if (window.SettingsApp) return line('wallpaper_set', { name: window.SettingsApp.nextWallpaper() });
       osCall('setWallpaper');
       return line('wallpaper');
     },
+    youtube_random: () => openInBrowser('www.youtube.com/random', 'youtube_random'),
+    news: () => openInBrowser('www.funforum.co.uk/news', 'news'),
     letter: () => writeLetter(),
     notes: text => {
       if (/\b(clear|delete|wipe|forget)\b/i.test(text)) {
@@ -939,7 +961,83 @@
   const RULES = [
     { re: /\b(?:my name is|call me)\s+([a-z][\w'-]*)/i, run: m => setName(m[1]) },
     { re: /^(?:take a note|note down|make a note|remember)(?: that)?[:,]?\s+(.+)/i, run: m => addNote(m[1]) },
+    // "make a thread called X in games", "start a forum post about Y"
+    { re: /\b(?:make|start|create|write|new|open|post)\b.*\b(?:thread|forum post|post)\b/i, run: m => threadFromText(m.input) },
+    // "a random youtube video", "play something on youtube"
+    { re: /\brandom\b.*\b(?:video|youtube)\b|\b(?:video|youtube)\b.*\brandom\b|\bplay\s+(?:something|anything|a video)\s+on\s+youtube\b/i, run: () => INTENTS.youtube_random() },
+    // "search youtube for cats", "play charlie bit my finger on youtube"
+    { re: /^(?:search|look\s+up|find)\s+(?:on\s+)?youtube\s+(?:for\s+)?(.+)$|^(?:play|watch|find)\s+(.+?)\s+on\s+youtube$/i,
+      run: m => openInBrowser('www.youtube.com/results?search_query=' + encodeURIComponent((m[1] || m[2]).trim()), 'youtube_search', { query: (m[1] || m[2]).trim() }) },
+    // "search the web for X", "google X", "look up X"
+    { re: /^(?:search|google|look\s+up)\s+(?:the\s+)?(?:web\s+|internet\s+)?(?:for\s+)?(.+)$/i,
+      run: m => openInBrowser(m[1].trim(), 'web_search', { query: m[1].trim() }) },
+    // "play cakes", "play crack the code"
+    { re: /\bplay\s+(?:some\s+|a\s+game\s+of\s+)?(comfy cakes|atrium cakes|cakes?|purble pairs|pair programming|pairs|crack the code|purble shop|code)\b/i, run: m => playPurble(m[1]) },
+    // "make the windows pumpkin", "change the window colour to sea"
+    { re: /\b(?:make|turn|change|set|paint|switch)\b.*\b(?:windows?|colou?r|glass|aero)\b.*\b(sky|twilight|sea|leaf|lime|sun|pumpkin|blush|violet|lavender|taupe|chocolate|slate|frost|default)\b/i, run: m => setWindowColour(m[1]) },
   ];
+
+  // ---- Things Clippy can do in the apps we built ----
+
+  // Open an address in the retro browser (anything that isn't an address goes to Notts Search) and say so.
+  function openInBrowser(address, lineKey, vars = {}) {
+    if (!window.RetroBrowser) return line('no_app');
+    window.RetroBrowser.open(address);
+    return line(lineKey, vars);
+  }
+
+  const FORUM_SECTIONS = [
+    ['games', 'Games', /\b(?:games?|gaming|video games?)\b/i],
+    ['movies-tv', 'Movies & TV', /\b(?:movies?|films?|tv|telly|shows?|movies\s*&\s*tv)\b/i],
+    ['sports', 'Sports', /\b(?:sports?|football|footy|match(?:es)?)\b/i],
+    ['general', 'General', /\bgeneral\b/i],
+  ];
+
+  // "make a thread called best wii games in games" -> section games, title "Best wii games"
+  function threadFromText(text) {
+    const titleMatch = text.match(/\b(?:called|titled|named|about|on)\s+["']?(.+?)["']?(?:\s+in\s+(?:the\s+)?[\w&\s]+?(?:\s+(?:section|channel|chat|forum))?)?\s*$/i);
+    const inSection = text.match(/\bin\s+(?:the\s+)?([\w&\s]+?)(?:\s+(?:section|channel|chat|forum))?\s*$/i);
+    // An explicit "in <section>" wins; otherwise any section word in the sentence (but not in the title)
+    const where = inSection ? inSection[1] : text.replace(titleMatch ? titleMatch[1] : '', '');
+    const section = FORUM_SECTIONS.find(([, , re]) => re.test(where));
+    let title = titleMatch ? titleMatch[1].trim() : '';
+    if (title) title = title[0].toUpperCase() + title.slice(1);
+    if (!section) {
+      return { text: line('forum_which'), choices: FORUM_SECTIONS.map(([id, name]) => ({ label: name, run: () => forumThread(id, title) })) };
+    }
+    return forumThread(section[0], title);
+  }
+
+  function forumThread(sectionId, title = '', body = '') {
+    if (!window.RetroBrowser) return line('no_app');
+    const hash = sectionId + '/new?' + new URLSearchParams({ title, body }).toString();
+    window.RetroBrowser.open('www.funforum.co.uk/forum', { hash });
+    // FunForum's login lives in this browser's storage (Supabase keeps it as sb-...-auth-token)
+    let loggedIn = false;
+    try { loggedIn = Object.keys(localStorage).some(k => /^sb-.+-auth-token$/.test(k)); } catch { /* storage blocked */ }
+    const name = FORUM_SECTIONS.find(([id]) => id === sectionId)[1];
+    return line('forum_thread', { section: name }) + (loggedIn ? '' : line('forum_login'));
+  }
+
+  const PURBLE_GAMES = [
+    ['comfy-cakes', 'Atrium Cakes', /cake/i],
+    ['purble-pairs', 'Pair Programming', /pair/i],
+    ['purble-shop', 'Crack the Code', /code|shop/i],
+  ];
+
+  function playPurble(name) {
+    const game = PURBLE_GAMES.find(([, , re]) => re.test(name));
+    if (typeof window.openPurblePlace !== 'function') return line('no_app');
+    window.openPurblePlace(game[0]);
+    return line('purble_game', { game: game[1] });
+  }
+
+  function setWindowColour(name) {
+    if (!window.SettingsApp) return line('no_app');
+    const colour = window.SettingsApp.setColour(name);
+    if (!colour) return line('colour_unknown', { list: list(window.SettingsApp.colourNames) });
+    return line('colour_set', { colour });
+  }
 
   // Returns a function that carries out the request, or null if Clippy isn't confident.
   function understand(text) {

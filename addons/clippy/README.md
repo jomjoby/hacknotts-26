@@ -55,10 +55,14 @@ For "write a letter", Clippy types into the focused text box, or into a `textare
 - "Open FunForum and tell me a joke"
 - "What's 12 x (7 + 3)?"
 - "Remind me in 5 minutes to drink my water"
-- "Give me something to post" (a 2000s-style message, then "Copy it")
+- "Give me something to post" (a 2000s-style message, then "Copy it" or "Post it on FunForum")
+- "Make a thread called best Wii games in Games" (opens FunForum's new-thread form, filled in)
+- "Open a random YouTube video", "Search YouTube for cats", "Search the web for Nottingham", "Show me the news"
+- "Play cakes" / "Play pairs" / "Play crack the code" (opens Purble Place straight into that game)
+- "Make the windows pumpkin" (Aero colour), "Change the wallpaper"
 - "Write a letter", or type "Dear Sam," in any text box
 - "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
-- "What's open?", "Close everything", "Change the wallpaper"
+- "What's open?", "Close everything"
 - "Be quiet" / "Talk more" / "Go away" (press **F1** to bring Clippy back)
 
 - Typos are fine: "opne notpad" works
