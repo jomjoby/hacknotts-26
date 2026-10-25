@@ -1,4 +1,9 @@
 /* Retro browser: a Firefox-on-Windows-7 style window built by browser.js. Everything is prefixed rb- so it won't clash with the OS. */
+:root {
+    --glass-sheen: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05) 30%);
+    --glass-tint: rgba(20, 45, 75, 0.32);
+    --glass-blur: blur(12px);
+}
 
 .rb-window {
   bottom: 45px;
@@ -12,9 +17,9 @@
   box-sizing: border-box;
   border: 1px solid rgba(0, 0, 0, 0.6);
   border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(to bottom, rgba(178, 208, 236, 0.82), rgba(120, 163, 205, 0.78));
-  backdrop-filter: blur(10px) saturate(1.4);
-  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  background: var(--glass-sheen), var(--glass-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.55),
     0 12px 32px rgba(0, 0, 0, 0.5);
@@ -43,6 +48,25 @@
 @keyframes rb-open {
   from { opacity: 0; transform: scale(0.94); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rb-close {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.94); }
+}
+
+@keyframes rb-minimise {
+    to { opacity: 0; transform: translate(var(--min-x), var(--min-y)) scale(0.1); }
+}
+
+.rb-window.rb-minimising {
+    animation: rb-minimise 0.25s ease-in forwards;
+    pointer-events: none;
+}
+
+.rb-window.rb-closing {
+    animation: rb-close 0.15s ease-in forwards;
+    pointer-events: none;
 }
 
 /* ---- title bar ---- */

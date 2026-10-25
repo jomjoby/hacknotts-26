@@ -452,21 +452,52 @@
     newTab(firstAddress);
   }
 
-  function close() {
+function close() {
     if (!win) return;
+    const el = win.el;
     win.tabs.forEach(t => announceApp(t, null));
-    win.el.remove();
     if (win.taskbarBtn) win.taskbarBtn.remove();
     win = null;
-  }
+    el.classList.add('rb-closing');
+    el.addEventListener('animationend', e => {
+        if (e.target === el) el.remove();
+    });
+}
 
   function minimise() {
-    win.el.classList.add('rb-minimized');
-    updateTaskbarButton();
+    const el = win.el;
+    const btn = win.taskbarBtn;
+    if (!btn) { el.classList.add('rb-minimized'); updateTaskbarButton(); return; }
+    if (el.classList.contains('rb-minimising')) return;
+    const w = el.getBoundingClientRect();
+    const b = btn.getBoundingClientRect();
+    el.style.setProperty('--min-x', (b.left + b.width / 2) - (w.left + w.width / 2) + 'px');
+    el.style.setProperty('--min-y', (b.top + b.height / 2) - (w.top + w.height / 2) + 'px');
+    el.classList.add('rb-minimising');
+
+    const done = e => {
+        if (e.target !== el) return;
+        el.removeEventListener('animationend', done);
+        el.classList.remove('rb-minimising');
+        el.classList.add('rb-minimized');
+        updateTaskbarButton();
+  };
+    el.addEventListener('animationend', done);
   }
 
   function restore() {
-    win.el.classList.remove('rb-minimized');
+    const el = win.el;
+    el.classList.remove('rb-minimized');
+    if (win.taskbarBtn) {
+        const w = el.getBoundingClientRect();
+        const b = win.taskbarBtn.getBoundingClientRect();
+        const dx = (b.left + b.width / 2) - (w.left + w.width / 2);
+        const dy = (b.top + b.height / 2) - (w.top + w.height / 2);
+        el.animate([
+            { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(0.1)` },
+            { opacity: 1, transform: 'none' }
+        ], { duration: 250, easing: 'ease-out' });
+    }
     updateTaskbarButton();
   }
 

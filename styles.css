@@ -1,3 +1,8 @@
+:root {
+    --glass-sheen: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05) 30%);
+    --glass-tint: rgba(20, 45, 75, 0.32);
+    --glass-blur: blur(12px);
+}
 
 body {
     margin: 0;
@@ -87,15 +92,10 @@ body {
     right: 0px;
     height: 45px;
 
-    background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.15),
-        rgba(255, 255, 255, 0.03) 20%
-    ),
-    rgba(15, 35, 60, 0.32);
+    background: var(--glass-sheen), var(--glass-tint);
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 
     border-top: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 0px;
@@ -236,16 +236,9 @@ body {
     box-sizing: border-box;
     padding: 6px;
 
-    background:
-    linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.2),
-        rgba(255, 255, 255, 0.05) 30%
-    ),
-    rgba(20, 45, 75, 0.3);
-
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: var(--glass-sheen), var(--glass-tint);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 6px 6px 0 0;
@@ -455,8 +448,9 @@ body {
     padding: 0 7px 7px;
     border: 1px solid rgba(0, 0, 0, 0.6);
     border-radius: 8px 8px 4px 4px;
-    background: linear-gradient(to bottom, rgba(178, 208, 236, 0.82), rgba(120, 163, 205, 0.78));
-    backdrop-filter: blur(10px) saturate(1.4);
+    background: var(--glass-sheen), var(--glass-tint);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 12px 32px rgba(0, 0, 0, 0.5);
     font: 12px "Segoe UI", Tahoma, sans-serif;
     animation: os-window-open 0.18s ease-out;
@@ -468,6 +462,33 @@ body {
 @keyframes os-window-open {
     from { opacity: 0; transform: scale(0.94); }
     to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes os-window-close {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.94); }
+}
+
+.os-window.os-closing {
+    animation: os-window-close 0.15s ease-in forwards;
+    pointer-events: none;
+}
+
+@keyframes os-window-minimise {
+    to { opacity: 0; transform: translate(var(--min-x), var(--min-y)) scale(0.1); }
+}
+
+.os-window.os-minimising {
+    animation: os-window-minimise 0.25s ease-in forwards;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .os-window,
+    .os-window.os-closing,
+    .os-window.os-minimising {
+        animation-duration: 1ms;
+    }
 }
 
 .os-titlebar {

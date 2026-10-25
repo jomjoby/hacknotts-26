@@ -206,20 +206,44 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
             if (onFocus) onFocus();
         },
         minimise() {
-            el.classList.add('os-minimised');
+                if (el.classList.contains('os-minimising')) return;
+            const w = el.getBoundingClientRect();
+            const b = taskbarBtn.getBoundingClientRect();
+            el.style.setProperty('--min-x', (b.left + b.width / 2) - (w.left + w.width / 2) + 'px');
+            el.style.setProperty('--min-y', (b.top + b.height / 2) - (w.top + w.height / 2) + 'px');
+            el.classList.add('os-minimising');
             taskbarBtn.classList.remove('active');
-            if (onMinimise) onMinimise();
+
+            const done = e => {
+                if (e.target !== el) return;
+                el.removeEventListener('animationend', done);
+                el.classList.remove('os-minimising');
+                el.classList.add('os-minimised');
+                if (onMinimise) onMinimise();
+    };
+    el.addEventListener('animationend', done);
         },
         restore() {
             if (!isMinimised()) return;
             el.classList.remove('os-minimised');
+            const w = el.getBoundingClientRect();
+            const b = taskbarBtn.getBoundingClientRect();
+            const dx = (b.left + b.width / 2) - (w.left + w.width / 2);
+            const dy = (b.top + b.height / 2) - (w.top + w.height / 2);
+            el.animate([
+                { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(0.1)` },
+                { opacity: 1, transform: 'none' }
+            ], { duration: 250, easing: 'ease-out' });
             if (onRestore) onRestore();
             win.focus();
         },
         close() {
-            if (onClose) onClose();
-            el.remove();
-            taskbarBtn.remove();
+                if (onClose) onClose();
+                taskbarBtn.remove();
+                el.classList.add('os-closing');
+                el.addEventListener('animationend', e => {
+                    if (e.target === el) el.remove();
+                });
         },
     };
 
