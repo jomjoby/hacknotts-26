@@ -167,8 +167,16 @@
       }
     }
 
-    // Routes live in the hash: "#watch?v=ID" or "#results?search_query=...", home otherwise.
+    // Routes live in the hash: "#watch?v=ID", "#results?search_query=..." or "#random"
+    // (a random classic, which then replaces itself with that video's address), home otherwise.
     function render() {
+      if (location.hash === '#random') {
+        const pick = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
+        history.replaceState(null, '', '#watch?v=' + pick.id);
+        render();
+        tellBrowser(pick.title, true);
+        return;
+      }
       const hash = decodeURIComponent(location.hash.slice(1));
       const watch = hash.match(/^watch\?v=([\w-]{11})/);
       const search = hash.match(/^results\?search_query=(.*)$/);
@@ -180,9 +188,9 @@
     }
 
     // Let the retro browser update its address bar and history.
-    function tellBrowser(title) {
+    function tellBrowser(title, replace) {
       const hash = location.hash.slice(1);
-      parent.postMessage({ source: 'retrobrowser-page', action: 'visited', address: 'www.youtube.com' + (hash ? '/' + hash : ''), title: title || document.title }, '*');
+      parent.postMessage({ source: 'retrobrowser-page', action: 'visited', address: 'www.youtube.com' + (hash ? '/' + hash : ''), title: title || document.title, replace: !!replace }, '*');
     }
 
     function go(hash) {

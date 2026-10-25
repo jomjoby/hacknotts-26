@@ -10,6 +10,12 @@
 </head>
 
 <body>
+    <div id="leftBar" class="sideBar">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
+    </div>
     <div id="mainBar">
         <div id="header">
             <img src="../../images/forumlogo.png">
@@ -84,6 +90,12 @@
                 </ol>
             </section>
         </div>
+    </div>
+    <div id="rightBar" class="sideBar">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
+        <img src="../../images/adhere.png">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -490,13 +502,30 @@
             newThreadForm.hidden = true;
             newThreadBtn.hidden = !loggedIn;
 
-            if (thread) openThread(thread === 'chat' ? 'chat' : Number(thread));
+            if (thread && thread.startsWith('new')) {
+                showThreadList();
+                startNewThread(new URLSearchParams(thread.split('?')[1] || ''));
+            }
+            else if (thread) openThread(thread === 'chat' ? 'chat' : Number(thread));
             else showThreadList();
+        }
+
+        // #games/new?title=...&body=... opens the New thread form filled in (Clippy uses this)
+        function startNewThread(params) {
+            if (!loggedIn) {
+                chatError.textContent = 'Log in first to start a thread.';
+                return;
+            }
+            newThreadForm.hidden = false;
+            newThreadBtn.hidden = true;
+            threadTitleInput.value = params.get('title') || '';
+            threadBodyInput.value = params.get('body') || '';
+            (threadTitleInput.value ? threadBodyInput : threadTitleInput).focus();
         }
 
         tabButtons.forEach(b => b.addEventListener('click', () => switchChannel(b.dataset.channel)));
 
-        // Opens #games, #games/12 (a thread) or #games/chat (the original chat) if present
+        // Opens #games, #games/12 (a thread), #games/chat (the original chat) or #games/new (start a thread) if present
         const [startChannel, startThread] = location.hash.slice(1).split('/');
         setupAuth().then(() => switchChannel(startChannel, startThread));
         listenForChanges();

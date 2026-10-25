@@ -55,30 +55,20 @@ For "write a letter", Clippy types into the focused text box, or into a `textare
 - "Open FunForum and tell me a joke"
 - "What's 12 x (7 + 3)?"
 - "Remind me in 5 minutes to drink my water"
-- "Give me something to post" (a 2000s-style message, then "Copy it")
+- "Give me something to post" (a 2000s-style message, then "Copy it" or "Post it on FunForum")
+- "Make a thread called best Wii games in Games" (opens FunForum's new-thread form, filled in)
+- "Open a random YouTube video", "Search YouTube for cats", "Search the web for Nottingham", "Show me the news"
+- "Play cakes" / "Play pairs" / "Play crack the code" (opens Purble Place straight into that game)
+- "Make the windows pumpkin" (Aero colour), "Change the wallpaper"
 - "Write a letter", or type "Dear Sam," in any text box
 - "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
-- "What's open?", "Close everything", "Change the wallpaper"
+- "What's open?", "Close everything"
 - "Be quiet" / "Talk more" / "Go away" (press **F1** to bring Clippy back)
 
 - Typos are fine: "opne notpad" works
 - "Turn on your voice" (or the speaker button) reads replies aloud using the browser's built-in speech
 
 It also notices you opening apps, typing in caps, rage-clicking and going idle (it falls asleep), and its eyes follow your mouse. It chimes when it pipes up on its own.
-
-## Brains: classic or AI
-
-Click the cog in Clippy's bubble, or type "settings", to choose:
-
-| Brain | What it is | Needs |
-| ----- | ---------- | ----- |
-| **Classic** (default) | The built-in classifier. Instant, works offline. | Nothing |
-| **Built-in AI** | Llama 3.2 1B running inside the browser with [WebLLM](https://github.com/mlc-ai/web-llm). Free, private, nothing sent anywhere. | Chrome or Edge with WebGPU. ~1GB download the first time, then cached. |
-| **Claude** | Claude via the Anthropic API. The smartest option. | An Anthropic API key, pasted into Clippy. Stored only in that browser's localStorage. |
-
-In the AI brains, clear commands ("open FunForum", timers, maths) are still handled instantly by the classic brain; the AI handles chat and anything it doesn't recognise, and can trigger the same actions itself. Clippy remembers the last few messages so follow-ups like "damn" make sense.
-
-To start in the built-in AI brain by default: `Clippy.init({ brain: 'local' })`. **Never put an API key in the code**: this repo is public.
 
 ## It learns
 

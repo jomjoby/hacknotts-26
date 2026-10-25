@@ -340,10 +340,12 @@ function makeWindow({ id, title, icon, width, height, minWidth = 320, minHeight 
 let purble = null;
 let purbleWindow = null;
 
-async function openPurblePlace() {
+// startGame (optional): 'comfy-cakes', 'purble-pairs' or 'purble-shop' opens straight into that game (Clippy uses this)
+async function openPurblePlace(startGame) {
     if (purbleWindow) {
         purbleWindow.restore();
         purbleWindow.focus();
+        if (startGame && purble) purble.openGame(startGame);
         return;
     }
 
@@ -387,7 +389,7 @@ async function openPurblePlace() {
         }
     }
     if (purbleWindow !== win) return; // closed while it was loading
-    purble = mount(win.body, { onExit: () => win.close() });
+    purble = mount(win.body, { onExit: () => win.close(), startGame });
     purble.focus();
 }
 

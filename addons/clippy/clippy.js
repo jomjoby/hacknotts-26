@@ -369,8 +369,23 @@
       "I'm stumped. Want to see what I can do?",
       "No idea, I'm afraid. But I'm great at maths and timers!",
       "My wire's in a twist. Could you say that differently?",
-      'That one\'s beyond my classic brain. Type "settings" to give me an AI brain!',
     ],
+    forum_thread: [
+      'Opening FunForum on {section}. Fill in the rest and press Post thread!',
+      'Off to {section}! Your new thread is ready to write.',
+      "Here's {section} on FunForum, with a new thread started for you.",
+    ],
+    forum_login: [' (Log in to FunForum first, or it won\'t let you post.)'],
+    forum_which: ['Which section should the thread go in?', 'Sure! Which section?'],
+    youtube_random: ["Here's a random classic. Enjoy!", 'Picking a random 2000s classic...', 'Random video coming right up. No refunds.'],
+    youtube_search: ['Searching YouTube for "{query}"...', 'To the YouTubes! Looking for "{query}".'],
+    web_search: ['Searching the web for "{query}"...', 'Let me look that up on Notts Search...', 'Dialling up the search engine for "{query}"...'],
+    news: ["Here's the latest from FunForum News.", 'Hot off the press!', 'Opening the news. Stop the presses!'],
+    purble_game: ['Opening {game}. Good luck!', '{game}? My favourite! Opening it now.', 'Off to {game}. Have fun!'],
+    colour_set: ['Done! Your windows are now {colour}.', '{colour} it is. Very fetching.', 'Windows painted {colour}!'],
+    colour_unknown: ["I don't know that colour. Try one of these: {list}."],
+    wallpaper_set: ['New wallpaper: {name}. Very stylish.', 'Redecorated! Say hello to {name}.', "Wallpaper changed to {name}. Don't you look nice."],
+    no_app: ["That isn't running right now, sorry!"],
     react: [
       'I know, right?',
       "Wild, isn't it?",
@@ -384,67 +399,6 @@
       "I'll take that as a compliment.",
       'Mhm! What next?',
       "That's the spirit!",
-    ],
-    brain_menu: ["Which brain should I use? I'm currently on {brain}.", 'Pick my brain! (Currently: {brain})', 'Brain transplant time? Right now I use {brain}.'],
-    brain_classic: ['Classic brain it is. Fast, offline, and only slightly confused.', 'Back to my trusty classic brain!'],
-    brain_local_loading: [
-      "Downloading my AI brain! It's about 1GB the first time, then it's saved. I'll keep answering while it loads.",
-      'Upgrade time! Fetching my AI brain (about 1GB, only the first time). Chat away meanwhile.',
-    ],
-    brain_local_ready: ['My AI brain is ready! Talk to me about anything.', 'Brain installed! I feel... smarter. Try me.', 'AI brain online. Go on, say something weird.'],
-    brain_no_webgpu: [
-      "This browser can't run my built-in AI (it needs WebGPU, so try Chrome or Edge). Sticking with my classic brain.",
-      'No WebGPU here, so no built-in AI brain, sorry! Chrome or Edge should work. Classic brain for now.',
-    ],
-    brain_error: ['My AI brain had a wobble ({error}). Using my classic brain for now.'],
-    brain_ask_key: [
-      'Paste your Anthropic API key into the box below and press Ask. It only stays in this browser. Type "cancel" to stop.',
-      'OK! Paste the API key below and press Ask. It never leaves this browser except to talk to Claude. "cancel" to stop.',
-    ],
-    brain_claude_ready: ["Connected to Claude! I'm much smarter now. Mostly.", "Claude brain plugged in! Ask me anything."],
-    brain_key_failed: ["That API key didn't work ({error}). Still using {brain}.", "Hmm, that key was rejected ({error}). Sticking with {brain}."],
-    key_forgotten: ['API key forgotten. What key? I never saw a key.', 'Done, the key is gone from this browser.'],
-    ai_still_loading: ['(My AI brain is still downloading: {percent}%.)', '(AI brain loading: {percent}%. Classic brain answering for now.)'],
-    ai_hiccup: ['(My AI brain hiccuped, so that was my classic brain talking.)'],
-    refusal: ["Ooh, that's not something I can help with. Try something else?"],
-    wake: [
-      "Oh! I wasn't asleep. I was defragmenting.",
-      '*yawn* Sorry, I was dreaming about floppy disks.',
-      "Huh? I'm up! I'm up!",
-      'Welcome back! I may have dozed off.',
-      'Oh, hello! I was just resting my eyes.',
-      "You're back! I wasn't snoring, was I?",
-      'Zzz... wha? Oh, hi!',
-      'Back already? I was mid-dream about a stapler.',
-    ],
-    rage: [
-      'Whoa, easy on the mouse! Is something not responding?',
-      'Click click click! Everything OK there?',
-      "That's a lot of clicking. Is something stuck?",
-      'Steady on! Want a hand with something?',
-    ],
-    rage_reply: [
-      'Classic. Try closing it and opening it again. It fixed everything in 2004 too.',
-      'Have you tried turning it off and on again?',
-      'Deep breaths. Try closing it and reopening it.',
-    ],
-    caps: [
-      'WHY ARE WE SHOUTING? (Psst, Caps Lock might be on.)',
-      'Is Caps Lock on, or are you just very excited?',
-      'INDOOR VOICE, PLEASE. (Caps Lock?)',
-      'Ooh, capitals. Is Caps Lock stuck?',
-    ],
-    many_windows: [
-      "That's a lot of windows! Want me to tidy up?",
-      'Whoa, window party! Want me to close some?',
-      'Your desktop is getting crowded. Shall I tidy up?',
-    ],
-    multitasker: ['Respect.', 'A true multitasker!', 'Fair. More windows, more fun.'],
-    opened_unknown: [
-      'It looks like you opened {app}. Need a hand with anything?',
-      'Ooh, {app}! Let me know if you need help.',
-      '{app}, nice! Shout if you need me.',
-      "I see you opened {app}. I'm here if you get stuck.",
     ],
   };
 
@@ -469,10 +423,6 @@
     notes: store.get('notes', []),
     chattiness: store.get('chattiness', 'normal'), // 'normal' | 'quiet'
     voice: store.get('voice', false),
-    brain: store.get('brain', null), // 'classic' | 'local' | 'claude' (set in init)
-    apiKey: store.get('apiKey', ''),
-    awaiting: null, // 'apikey' while the next thing typed is an API key
-    history: [], // recent { role, content } turns, so the AI knows what was said
     requestId: 0,
     lastApp: null, // the app most recently opened or talked about, for "close it"
     hidden: false,
@@ -490,7 +440,7 @@
     lookAt: null,
   };
 
-  let root, bubble, textEl, youEl, choicesEl, input, charEl, voiceButton, progressEl, eyes = [];
+  let root, bubble, textEl, youEl, choicesEl, input, charEl, voiceButton, eyes = [];
 
   // Shuffle bag: every item in a list is used once before any of them repeats,
   // and the same item never comes up twice in a row.
@@ -705,8 +655,9 @@
   const TRAINING = {
     greet: ['hi', 'hello', 'hey', 'hiya', 'yo', 'good morning', 'good afternoon', 'good evening', 'sup', 'whats up', 'hey clippy', 'hello there'],
     help: ['help', 'what can you do', 'what do you do', 'how do you work', 'show me what you can do', 'commands', 'i need help', 'options', 'what are your features', 'how do i use you', 'do something', 'can you do smth', 'do smth', 'what else can you do', 'anything else'],
+    youtube_random: ['open a random youtube video', 'random youtube video', 'play a random video', 'show me a random video', 'play something on youtube', 'surprise me with a video', 'random video', 'show me a youtube video', 'watch a video', 'play a video'],
+    news: ['show me the news', 'open the news', 'whats the news', 'latest news', 'forum news', 'any news', 'read the news', 'whats new on the forum', 'news'],
     react: ['damn', 'thats crazy', 'wow', 'lol', 'haha', 'omg', 'no way', 'cool', 'nice', 'interesting', 'wtf', 'bruh', 'fair enough', 'true', 'yeah', 'yh', 'mad', 'crazy', 'unreal', 'sick', 'lmao', 'oh', 'hmm', 'really', 'seriously', 'wild', 'thats mad', 'oh wow', 'thats insane'],
-    settings: ['settings', 'change your brain', 'use ai', 'switch brain', 'turn on ai', 'use the ai', 'make you smarter', 'ai mode', 'change mode', 'use an api key', 'brain settings', 'classic mode', 'turn off ai', 'use claude', 'built in ai', 'forget my api key'],
     who: ['who are you', 'what are you', 'whats your name', 'are you a robot', 'are you an ai', 'tell me about yourself', 'are you alive', 'how do you think'],
     open_app: ['open msn', 'open the forum', 'open funforum', 'open notepad', 'launch the browser', 'start messenger', 'run notepad', 'open internet explorer', 'i want to chat', 'open it', 'load the app', 'show me msn', 'go on the internet', 'open my computer', 'start the program', 'launch', 'open the web browser', 'open my documents'],
     close_app: ['close msn', 'close notepad', 'quit the browser', 'exit messenger', 'shut notepad', 'kill the app', 'close this window', 'get rid of this window', 'close everything', 'close all windows', 'close it', 'close the program', 'shut it down'],
@@ -735,7 +686,7 @@
     timer: 'Set a timer', joke: 'Tell me a joke', bored: "I'm bored", status: 'Get something to post',
     wallpaper: 'Change the wallpaper', letter: 'Write a letter', notes: 'Show my notes', name_get: 'Say my name',
     quiet: 'Fewer tips', chatty: 'More tips', hide: 'Hide Clippy', thanks: 'Say thanks',
-    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting', settings: 'Change your brain',
+    voice_on: 'Read replies aloud', voice_off: 'Stop reading aloud', react: 'Just reacting', youtube_random: 'Play a random YouTube video', news: 'Show me the news',
   };
 
   const classifier = new IntentClassifier();
@@ -914,7 +865,7 @@
     store.set('chattiness', level);
   }
 
-  const EXAMPLES = ['Open FunForum', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Give me something to post', 'Write a letter', "What's open?", 'Turn on your voice', 'Tell me a joke'];
+  const EXAMPLES = ['Make a thread called best Wii games in Games', 'Open a random YouTube video', 'Search the web for Nottingham', 'Show me the news', 'Play cakes', 'Make the windows pumpkin', 'Change the wallpaper', "What's 12 x 7?", 'Remind me in 1 minute to stretch', 'Tell me a joke'];
 
   // Each intent returns a reply: a string, or { text, choices: [{ label, cmd } | { label, run }] }.
   const INTENTS = {
@@ -968,15 +919,19 @@
       return {
         text: line('status_offer', { status }),
         choices: [
+          { label: 'Post it on FunForum', run: () => forumThread('general', '', status) },
           { label: 'Copy it', run: () => copyText(status) },
           { label: 'Another one', cmd: 'another status' },
         ],
       };
     },
     wallpaper: () => {
+      if (window.SettingsApp) return line('wallpaper_set', { name: window.SettingsApp.nextWallpaper() });
       osCall('setWallpaper');
       return line('wallpaper');
     },
+    youtube_random: () => openInBrowser('www.youtube.com/random', 'youtube_random'),
+    news: () => openInBrowser('www.funforum.co.uk/news', 'news'),
     letter: () => writeLetter(),
     notes: text => {
       if (/\b(clear|delete|wipe|forget)\b/i.test(text)) {
@@ -1000,23 +955,89 @@
     hide: () => { setTimeout(hide, 1500); return line('hide'); },
     thanks: () => line('thanks'),
     react: () => line('react'),
-    settings: text => {
-      if (/\bforget\b/i.test(text)) return forgetKey();
-      if (/\b(classic|off)\b/i.test(text)) return setBrain('classic');
-      if (/\b(claude|api|key)\b/i.test(text)) return setBrain('claude');
-      if (/\b(built|local)\b/i.test(text)) return setBrain('local');
-      return brainMenu();
-    },
   };
-
-  // Small talk the AI does better than canned lines, when an AI brain is ready.
-  const CHAT_INTENTS = new Set(['greet', 'react', 'thanks', 'who', 'bored']);
 
   // Rules checked before the classifier, for things with a clear shape.
   const RULES = [
     { re: /\b(?:my name is|call me)\s+([a-z][\w'-]*)/i, run: m => setName(m[1]) },
     { re: /^(?:take a note|note down|make a note|remember)(?: that)?[:,]?\s+(.+)/i, run: m => addNote(m[1]) },
+    // "make a thread called X in games", "start a forum post about Y"
+    { re: /\b(?:make|start|create|write|new|open|post)\b.*\b(?:thread|forum post|post)\b/i, run: m => threadFromText(m.input) },
+    // "a random youtube video", "play something on youtube"
+    { re: /\brandom\b.*\b(?:video|youtube)\b|\b(?:video|youtube)\b.*\brandom\b|\bplay\s+(?:something|anything|a video)\s+on\s+youtube\b/i, run: () => INTENTS.youtube_random() },
+    // "search youtube for cats", "play charlie bit my finger on youtube"
+    { re: /^(?:search|look\s+up|find)\s+(?:on\s+)?youtube\s+(?:for\s+)?(.+)$|^(?:play|watch|find)\s+(.+?)\s+on\s+youtube$/i,
+      run: m => openInBrowser('www.youtube.com/results?search_query=' + encodeURIComponent((m[1] || m[2]).trim()), 'youtube_search', { query: (m[1] || m[2]).trim() }) },
+    // "search the web for X", "google X", "look up X"
+    { re: /^(?:search|google|look\s+up)\s+(?:the\s+)?(?:web\s+|internet\s+)?(?:for\s+)?(.+)$/i,
+      run: m => openInBrowser(m[1].trim(), 'web_search', { query: m[1].trim() }) },
+    // "play cakes", "play crack the code"
+    { re: /\bplay\s+(?:some\s+|a\s+game\s+of\s+)?(comfy cakes|atrium cakes|cakes?|purble pairs|pair programming|pairs|crack the code|purble shop|code)\b/i, run: m => playPurble(m[1]) },
+    // "make the windows pumpkin", "change the window colour to sea"
+    { re: /\b(?:make|turn|change|set|paint|switch)\b.*\b(?:windows?|colou?r|glass|aero)\b.*\b(sky|twilight|sea|leaf|lime|sun|pumpkin|blush|violet|lavender|taupe|chocolate|slate|frost|default)\b/i, run: m => setWindowColour(m[1]) },
   ];
+
+  // ---- Things Clippy can do in the apps we built ----
+
+  // Open an address in the retro browser (anything that isn't an address goes to Notts Search) and say so.
+  function openInBrowser(address, lineKey, vars = {}) {
+    if (!window.RetroBrowser) return line('no_app');
+    window.RetroBrowser.open(address);
+    return line(lineKey, vars);
+  }
+
+  const FORUM_SECTIONS = [
+    ['games', 'Games', /\b(?:games?|gaming|video games?)\b/i],
+    ['movies-tv', 'Movies & TV', /\b(?:movies?|films?|tv|telly|shows?|movies\s*&\s*tv)\b/i],
+    ['sports', 'Sports', /\b(?:sports?|football|footy|match(?:es)?)\b/i],
+    ['general', 'General', /\bgeneral\b/i],
+  ];
+
+  // "make a thread called best wii games in games" -> section games, title "Best wii games"
+  function threadFromText(text) {
+    const titleMatch = text.match(/\b(?:called|titled|named|about|on)\s+["']?(.+?)["']?(?:\s+in\s+(?:the\s+)?[\w&\s]+?(?:\s+(?:section|channel|chat|forum))?)?\s*$/i);
+    const inSection = text.match(/\bin\s+(?:the\s+)?([\w&\s]+?)(?:\s+(?:section|channel|chat|forum))?\s*$/i);
+    // An explicit "in <section>" wins; otherwise any section word in the sentence (but not in the title)
+    const where = inSection ? inSection[1] : text.replace(titleMatch ? titleMatch[1] : '', '');
+    const section = FORUM_SECTIONS.find(([, , re]) => re.test(where));
+    let title = titleMatch ? titleMatch[1].trim() : '';
+    if (title) title = title[0].toUpperCase() + title.slice(1);
+    if (!section) {
+      return { text: line('forum_which'), choices: FORUM_SECTIONS.map(([id, name]) => ({ label: name, run: () => forumThread(id, title) })) };
+    }
+    return forumThread(section[0], title);
+  }
+
+  function forumThread(sectionId, title = '', body = '') {
+    if (!window.RetroBrowser) return line('no_app');
+    const hash = sectionId + '/new?' + new URLSearchParams({ title, body }).toString();
+    window.RetroBrowser.open('www.funforum.co.uk/forum', { hash });
+    // FunForum's login lives in this browser's storage (Supabase keeps it as sb-...-auth-token)
+    let loggedIn = false;
+    try { loggedIn = Object.keys(localStorage).some(k => /^sb-.+-auth-token$/.test(k)); } catch { /* storage blocked */ }
+    const name = FORUM_SECTIONS.find(([id]) => id === sectionId)[1];
+    return line('forum_thread', { section: name }) + (loggedIn ? '' : line('forum_login'));
+  }
+
+  const PURBLE_GAMES = [
+    ['comfy-cakes', 'Atrium Cakes', /cake/i],
+    ['purble-pairs', 'Pair Programming', /pair/i],
+    ['purble-shop', 'Crack the Code', /code|shop/i],
+  ];
+
+  function playPurble(name) {
+    const game = PURBLE_GAMES.find(([, , re]) => re.test(name));
+    if (typeof window.openPurblePlace !== 'function') return line('no_app');
+    window.openPurblePlace(game[0]);
+    return line('purble_game', { game: game[1] });
+  }
+
+  function setWindowColour(name) {
+    if (!window.SettingsApp) return line('no_app');
+    const colour = window.SettingsApp.setColour(name);
+    if (!colour) return line('colour_unknown', { list: list(window.SettingsApp.colourNames) });
+    return line('colour_set', { colour });
+  }
 
   // Returns a function that carries out the request, or null if Clippy isn't confident.
   function understand(text) {
@@ -1033,29 +1054,19 @@
     const [top, second] = classifier.classify(text);
     const clearWinner = top && second && top.confidence >= 1.5 * second.confidence;
     const onlyFit = top && top.coverage === 1 && (!second || second.coverage < 0.5);
-    if (top && top.coverage >= 0.6 && (!second || clearWinner || onlyFit)) {
-      const run = () => INTENTS[top.intent](text);
-      run.intent = top.intent;
-      return run;
-    }
+    if (top && top.coverage >= 0.6 && (!second || clearWinner || onlyFit)) return () => INTENTS[top.intent](text);
     return null;
   }
 
   const asReply = r => (typeof r === 'string' ? { text: r } : r);
-  const withNote = (reply, note) => { const r = asReply(reply); return { ...r, text: r.text + '\n' + note }; };
 
-  // Returns a reply, or a Promise of one when the AI brain is answering.
   function respond(text) {
     if (state.choices.length && /^(y|yes|yeah|yep|sure|ok|okay|go on)\b/i.test(text)) return runChoice(state.choices[0]);
     if (state.choices.length && /^(no|nah|nope)\b/i.test(text)) return line('no');
 
-    // Clear commands are handled directly: instant and reliable, whatever the brain.
-    const action = understand(text);
-    if (action && !(CHAT_INTENTS.has(action.intent) && aiReady())) return action();
-
     // "open funforum and tell me a joke": do each part, but only if every part makes sense.
     const parts = text.split(/\s*,?\s+(?:and then|and|then)\s+/i);
-    if (!action && parts.length > 1) {
+    if (parts.length > 1) {
       const actions = parts.map(understand);
       if (actions.every(Boolean)) {
         const replies = actions.map(run => run()).filter(r => r != null).map(asReply);
@@ -1063,15 +1074,9 @@
       }
     }
 
-    const classic = () => (action ? action() : notUnderstood(text));
-    if (aiReady()) {
-      return askAI(text).catch(err => {
-        console.warn('Clippy AI error:', err);
-        return withNote(classic(), line('ai_hiccup'));
-      });
-    }
-    if (state.brain === 'local' && ai.loading) return withNote(classic(), line('ai_still_loading', { percent: Math.round(ai.progress * 100) }));
-    return classic();
+    const action = understand(text);
+    if (action) return action();
+    return notUnderstood(text);
   }
 
   function notUnderstood(text) {
@@ -1103,204 +1108,6 @@
     classifier.learn(intent, text);
     learned.push({ intent, text });
     store.set('learned', learned.slice(-200));
-  }
-
-  // ----------------------------------------------------------------- brains
-  //
-  // 'classic': the classifier above only. Instant and offline.
-  // 'local':   a small open AI model (Llama 3.2 1B), downloaded once (~1GB, then
-  //            cached by the browser) and run on this computer with WebLLM.
-  //            No account or key. Needs WebGPU (Chrome or Edge).
-  // 'claude':  Claude via the Anthropic API, with a key pasted into Clippy.
-
-  const WEBLLM_URL = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm';
-  const CLAUDE_MODEL = 'claude-opus-5-5';
-  const BRAIN_NAMES = { classic: 'my classic brain', local: 'built-in AI', claude: 'Claude' };
-
-  const ai = { engine: null, loading: null, progress: 0 };
-
-  const aiReady = () => (state.brain === 'local' && !!ai.engine) || (state.brain === 'claude' && !!state.apiKey);
-
-  function loadLocalModel() {
-    if (ai.loading) return ai.loading;
-    ai.loading = (async () => {
-      const adapter = navigator.gpu && await navigator.gpu.requestAdapter();
-      if (!adapter) throw new Error('no-webgpu');
-      const model = adapter.features.has('shader-f16') ? 'Llama-3.2-1B-Instruct-q4f16_1-MLC' : 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
-      const webllm = await import(WEBLLM_URL);
-      // The model runs in a worker so the desktop doesn't freeze while it thinks.
-      const workerCode = `import { WebWorkerMLCEngineHandler } from '${WEBLLM_URL}';
-        const handler = new WebWorkerMLCEngineHandler();
-        self.onmessage = msg => handler.onmessage(msg);`;
-      const worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' })), { type: 'module' });
-      ai.engine = await webllm.CreateWebWorkerMLCEngine(worker, model, {
-        initProgressCallback: report => {
-          ai.progress = report.progress;
-          progressEl.hidden = false;
-          progressEl.textContent = `AI brain: ${Math.round(report.progress * 100)}% loaded`;
-        },
-      });
-      return ai.engine;
-    })();
-    ai.loading.catch(() => { ai.loading = null; });
-    return ai.loading;
-  }
-
-  function startLocal(announce) {
-    progressEl.hidden = false;
-    progressEl.textContent = 'AI brain: starting...';
-    loadLocalModel()
-      .then(() => {
-        progressEl.hidden = true;
-        if (announce && state.brain === 'local') say(line('brain_local_ready'), { autoHide: 10000 });
-      })
-      .catch(err => {
-        progressEl.hidden = true;
-        if (state.brain !== 'local') return;
-        state.brain = 'classic';
-        store.set('brain', 'classic');
-        say(err.message === 'no-webgpu' ? line('brain_no_webgpu') : line('brain_error', { error: err.message }));
-      });
-  }
-
-  function setBrain(brain) {
-    if (brain === 'claude' && !state.apiKey) {
-      state.awaiting = 'apikey';
-      input.type = 'password';
-      input.placeholder = 'Paste your API key...';
-      setTimeout(() => input.focus(), 0);
-      return line('brain_ask_key');
-    }
-    if (brain === 'local' && !ai.engine) {
-      return (async () => {
-        const adapter = navigator.gpu && await navigator.gpu.requestAdapter().catch(() => null);
-        if (!adapter) return line('brain_no_webgpu');
-        state.brain = 'local';
-        store.set('brain', 'local');
-        startLocal(true);
-        return line('brain_local_loading');
-      })();
-    }
-    state.brain = brain;
-    store.set('brain', brain);
-    return line({ local: 'brain_local_ready', claude: 'brain_claude_ready', classic: 'brain_classic' }[brain]);
-  }
-
-  function brainMenu() {
-    const choices = [
-      { label: 'Classic (instant, works offline)', run: () => setBrain('classic') },
-      { label: 'Built-in AI (free, no account, ~1GB download)', run: () => setBrain('local') },
-      { label: 'Claude (needs an API key)', run: () => setBrain('claude') },
-    ];
-    if (state.apiKey) choices.push({ label: 'Forget my API key', run: forgetKey });
-    return { text: line('brain_menu', { brain: BRAIN_NAMES[state.brain] }), choices };
-  }
-
-  function forgetKey() {
-    state.apiKey = '';
-    store.set('apiKey', '');
-    if (state.brain === 'claude') { state.brain = 'classic'; store.set('brain', 'classic'); }
-    return line('key_forgotten');
-  }
-
-  function stopAwaitingKey() {
-    state.awaiting = null;
-    input.type = 'text';
-    input.placeholder = 'Ask me something...';
-  }
-
-  // The next thing typed after choosing Claude is the key: check it works before switching.
-  function receiveKey(key) {
-    stopAwaitingKey();
-    if (/^cancel$/i.test(key)) { say(line('no')); return; }
-    showThinking('••••••••');
-    askClaude([{ role: 'user', content: 'Say hi in five words or fewer.' }], key)
-      .then(() => {
-        state.apiKey = key;
-        store.set('apiKey', key);
-        say(setBrain('claude'));
-      })
-      .catch(err => say(line('brain_key_failed', { error: err.message, brain: BRAIN_NAMES[state.brain] })));
-  }
-
-  function systemPrompt() {
-    const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const open = openApps.size ? list([...openApps.keys()].map(appName)) : 'nothing';
-    const commands = [
-      ...Object.values(apps).flatMap(a => [`open ${a.name}`, `close ${a.name}`]),
-      'close everything', 'change the wallpaper', 'give me something to post', 'write a letter',
-      'remind me in <number> minutes to <task>', 'tell me a joke',
-    ];
-    return [
-      'You are Clippy, a cheerful, slightly over-eager talking paperclip who lives on a retro Windows 7-style desktop built for the HackNotts 2026 hackathon (theme: the 2000s).',
-      'Reply in one or two short sentences, under 40 words. Plain text only: no markdown, lists or emojis. British English. Be playful, warm and helpful; 2000s references are welcome.',
-      `It is ${clock()} on ${date}. Open windows: ${open}.${state.name ? ` The user's name is ${state.name}.` : ''}`,
-      'You can control the desktop. Only when the user asks for one of these, put the matching command on its own line at the end of your reply, written exactly like this:',
-      ...commands.map(c => `[do: ${c}]`),
-      "You can't browse the web or see the screen beyond what is listed here, so don't pretend to.",
-    ].join('\n');
-  }
-
-  async function askClaude(messages, key = state.apiKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2026-10-21',
-        'anthropic-beta': 'server-side-fallback-2026-07-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 16000,
-        output_config: { effort: 'low' },
-        fallbacks: 'default',
-        system: systemPrompt(),
-        messages,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data.error && data.error.message) || `HTTP ${res.status}`);
-    if (data.stop_reason === 'refusal') return line('refusal');
-    return data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
-  }
-
-  async function askLocal(messages) {
-    const result = await ai.engine.chat.completions.create({
-      messages: [{ role: 'system', content: systemPrompt() }, ...messages],
-      max_tokens: 120,
-      temperature: 0.8,
-    });
-    return (result.choices[0].message.content || '').trim();
-  }
-
-  async function askAI(text) {
-    const messages = [...state.history.slice(-12), { role: 'user', content: text }];
-    const reply = state.brain === 'claude' ? await askClaude(messages) : await askLocal(messages);
-    return runCommands(reply);
-  }
-
-  // Carry out any [do: ...] commands the AI asked for, using the classic brain's actions.
-  function runCommands(reply) {
-    const results = [];
-    const text = reply.replace(/\[do:\s*([^\]]+)\]/gi, (_, cmd) => {
-      const action = understand(cmd.trim());
-      if (action) results.push(asReply(action()));
-      return '';
-    }).trim();
-    // Keep an action's own text when it carries something the AI can't know (like a generated status).
-    const extra = results.filter(r => r.choices && r.choices.length).map(r => r.text);
-    return {
-      text: [text || results.map(r => r.text).join('\n'), ...extra].filter(Boolean).join('\n') || '...',
-      choices: results.flatMap(r => r.choices || []),
-    };
-  }
-
-  function remember(userText, reply) {
-    if (reply == null) return;
-    state.history.push({ role: 'user', content: userText }, { role: 'assistant', content: asReply(reply).text });
-    if (state.history.length > 24) state.history.splice(0, state.history.length - 24);
   }
 
   // ------------------------------------------------------------ sound & voice
@@ -1379,13 +1186,9 @@
       <div class="clippy-you" hidden></div>
       <div class="clippy-text" aria-live="polite"></div>
       <div class="clippy-choices"></div>
-      <div class="clippy-progress" hidden></div>
       <form class="clippy-ask">
         <button class="clippy-voice" type="button" aria-pressed="false" aria-label="Read replies aloud" title="Read replies aloud">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="clippy-waves" d="M11 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9"/></svg>
-        </button>
-        <button class="clippy-settings" type="button" aria-label="Choose Clippy's brain" title="Choose Clippy's brain">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><circle class="clippy-cog" cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2"/></svg>
         </button>
         <input type="text" placeholder="Ask me something..." aria-label="Ask Clippy" autocomplete="off">
         <button type="submit">Ask</button>
@@ -1420,8 +1223,6 @@
     charEl = root.querySelector('.clippy-char');
     voiceButton = root.querySelector('.clippy-voice');
     voiceButton.setAttribute('aria-pressed', String(state.voice));
-    progressEl = root.querySelector('.clippy-progress');
-    root.querySelector('.clippy-settings').addEventListener('click', () => say(brainMenu()));
     eyes = [...root.querySelectorAll('.clippy-eye')].map(g => {
       const pupil = g.querySelector('.clippy-pupil');
       return { white: g.querySelector('.clippy-eye-white'), pupil, cx: +pupil.getAttribute('cx'), cy: +pupil.getAttribute('cy') };
@@ -1547,7 +1348,6 @@
         const pause = Math.max(0, 350 + Math.random() * 400 - (Date.now() - started));
         setTimeout(() => {
           if (id !== state.requestId) return;
-          remember(you, result);
           say(result, { you });
         }, pause);
       });
@@ -1556,7 +1356,6 @@
   function handleInput(raw) {
     const text = raw.trim();
     if (!text) return;
-    if (state.awaiting === 'apikey') { receiveKey(text); return; }
     reply(text, () => respond(text));
   }
 
@@ -1579,7 +1378,6 @@
   }
 
   function closeBubble() {
-    if (state.awaiting) stopAwaitingKey();
     clearTimeout(state.autoHideTimer);
     clearInterval(state.typing);
     state.typingDone = null;
@@ -1808,11 +1606,9 @@
     if (root) return window.Clippy;
     Object.assign(config, options);
     (options.apps || []).forEach(registerApp);
-    // The brain the user last picked wins; otherwise options.brain ('classic' or 'local').
-    state.brain = state.brain || options.brain || 'classic';
-    if (state.brain === 'claude' && !state.apiKey) state.brain = 'classic';
+    // Tidy away anything the old AI brains saved (an API key must not linger in the browser).
+    ['brain', 'apiKey'].forEach(key => { try { localStorage.removeItem('clippy:' + key); } catch { /* storage blocked */ } });
     build();
-    if (state.brain === 'local') startLocal(false);
     watch();
     scheduleBlink();
     state.silent = true; // apps already on screen at startup don't get a tip
@@ -1835,11 +1631,9 @@
     appClosed: id => openApps.delete(id),
     setChattiness,
     setVoice,
-    setBrain: brain => Promise.resolve(setBrain(brain)).then(say),
-    get brain() { return state.brain; },
     // Current settings, for the Control Panel.
     get settings() {
-      return { visible: !state.hidden, tips: state.chattiness !== 'quiet', voice: state.voice, brain: state.brain };
+      return { visible: !state.hidden, tips: state.chattiness !== 'quiet', voice: state.voice };
     },
     get openApps() { return [...openApps.keys()]; },
     // For debugging: what Clippy thinks a sentence means.
