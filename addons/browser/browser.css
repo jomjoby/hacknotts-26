@@ -407,8 +407,8 @@
 .rb-taskbar-btn {
     width: 58px;
     height: calc(100% - 6px);
-    margin: 0 1px;
-    padding: 4px;
+    margin: 1 1px;
+    padding: 3px 3px;
     box-sizing: border-box;
     border-radius: 3px;
     border: 1px solid rgba(255, 255, 255, 0.3);
