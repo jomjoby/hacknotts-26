@@ -1,5 +1,14 @@
 # HackNotts 26
 
+A Windows 7 style "OS" in the browser, built for HackNotts 2026 (theme: retro 2000s).
+
+## The team
+
+- **Jom**: the OS (desktop, taskbar, start menu, windows)
+- **Manraj**: Purble Place
+- **Adam**: FunForum and the Media Player
+- **Anand**: Clippy, the browser, the Control Panel and Paint
+
 ## Running it
 
 Run it from a local web server rather than opening `index.html` as a file. YouTube videos in the browser only play that way (and Purble Place needs it in some browsers).
