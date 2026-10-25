@@ -3,6 +3,28 @@ body{
     background: url(../../images/pattern.jpg) repeat;
 }
 
+.sideBar{
+    display: flex;
+    flex-direction: column;
+    width: 150px;
+    top: 250px;
+}
+
+.sideBar img{
+    margin-bottom: 40px;
+    border: 2px solid black;
+}
+
+#leftBar{
+    position: absolute;
+    left: 20px;
+}
+
+#rightBar{
+    position: absolute;
+    right: 20px;
+}
+
 #mainBar{
     display: flex;
     flex-direction: column;

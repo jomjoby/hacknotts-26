@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <link rel="stylesheet" href="music.css">
+</head>
+
+<body>
+    <header id="toolbar">
+        <a href="fhome.html" id="back">&#9664; Back to site</a>
+        <span id="appTitle">Media Player</span>
+        <input type="search" id="search" placeholder="Search">
+    </header>
+
+    <div id="main">
+        <nav id="library">
+            <h2>Library</h2>
+            <ul id="folderList"></ul>
+        </nav>
+        <section id="listPane">
+            <div id="listHead"><h1 id="listTitle">All Music</h1></div>
+            <table>
+                <thead><tr><th class="num">#</th><th class="title">Title</th><th>Album</th></tr></thead>
+                <tbody id="songRows"></tbody>
+            </table>
+            <p id="status">Loading songs...</p>
+        </section>
+    </div>
+
+    <footer id="controls">
+        <div id="seekRow">
+            <span id="curTime">0:00</span>
+            <input type="range" id="seek" min="0" max="1000" value="0">
+            <span id="durTime">0:00</span>
+        </div>
+        <div id="btnRow">
+            <div id="nowPlaying"><strong id="npTitle">Nothing playing</strong><span id="npAlbum"></span></div>
+            <div id="transport">
+                <button class="cbtn" id="shuffleBtn" title="Shuffle">&#8644;</button>
+                <button class="cbtn" id="prevBtn" title="Previous">&#9198;</button>
+                <button class="cbtn" id="play" title="Play">&#9654;</button>
+                <button class="cbtn" id="stopBtn" title="Stop">&#9632;</button>
+                <button class="cbtn" id="nextBtn" title="Next">&#9197;</button>
+                <button class="cbtn" id="repeatBtn" title="Repeat: off">&#8635;</button>
+            </div>
+            <div id="volBox">
+                <button class="cbtn" id="mute" title="Mute">&#128266;</button>
+                <input type="range" id="volume" min="0" max="100" value="80">
+            </div>
+        </div>
+    </footer>
+
+    <audio id="audio" preload="none"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://wjfnpfmmlxsjzswurtxf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZm5wZm1tbHhzanpzd3VydHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4Mzk2MzYsImV4cCI6MjEwODQxNTYzNn0.JCsaTfjvhFWBuImv03vbIKwT5pVqIUr7lyKRZqVJhYo';
+        const BUCKET = 'playlist';
+
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const $ = id => document.getElementById(id);
+        const audio = $('audio');
+
+        let songs = [], shown = [], nowSong = null, folder = null;
+        let shuffle = false, repeat = 0, seeking = false; // repeat: 0 off, 1 all, 2 one
+
+        const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
+        const niceName = n => n.replace(/\.[^.]+$/, '').replace(/_/g, ' ');
+        const niceFolder = f => f.split('/').join(' \u203A ');
+        const setPct = el => el.style.setProperty('--pct', ((el.value - el.min) / (el.max - el.min) * 100) + '%');
+
+        const FOLDERS = ['Rap', 'Pop', 'RnB', 'Alternative', 'Electronic'];
+
+        async function listFolder(path) {
+            const out = [];
+            let offset = 0;
+            while (true) {
+                const { data, error } = await sb.storage.from(BUCKET).list(path, { limit: 100, offset });
+                if (error) throw new Error('Folder "' + path + '": ' + error.message);
+                for (const item of data) {
+                    if (/\.(mp3|m4a|wav|ogg|flac|aac|opus)$/i.test(item.name)) {
+                        out.push({ path: path + '/' + item.name, name: item.name, folder: path });
+                    }
+                }
+                if (data.length < 100) break;
+                offset += 100;
+            }
+            return out;
+        }
+
+        async function load() {
+            try {
+                const files = (await Promise.all(FOLDERS.map(f => listFolder(f)))).flat();
+                songs = files.map(f => ({
+                    ...f,
+                    title: niceName(f.name),
+                    url: sb.storage.from(BUCKET).getPublicUrl(f.path).data.publicUrl
+                }));
+                songs.sort((a, b) => a.folder.localeCompare(b.folder) || a.title.localeCompare(b.title, undefined, { numeric: true }));
+                if (!songs.length) { $('status').textContent = 'No songs found in the "' + BUCKET + '" bucket.'; return; }
+                $('status').textContent = '';
+                renderFolders();
+                applyFilter();
+            } catch (e) {
+                $('status').textContent = 'Could not load songs: ' + e.message + ' (check the bucket name and the storage policy).';
+            }
+        }
+
+        function renderFolders() {
+            const list = $('folderList');
+            list.replaceChildren();
+            const add = (label, key, count) => {
+                const li = document.createElement('li');
+                li.className = folder === key ? 'sel' : '';
+                const name = document.createElement('span');
+                name.textContent = label;
+                const cnt = document.createElement('span');
+                cnt.className = 'cnt';
+                cnt.textContent = count;
+                li.append(name, cnt);
+                li.onclick = () => { folder = key; renderFolders(); applyFilter(); };
+                list.appendChild(li);
+            };
+            add('All Music', null, songs.length);
+            [...new Set(songs.map(s => s.folder))].sort().forEach(f => add(niceFolder(f), f, songs.filter(s => s.folder === f).length));
+        }
+
+        function applyFilter() {
+            const q = $('search').value.trim().toLowerCase();
+            shown = songs.filter(s => (folder === null || s.folder === folder) &&
+                (!q || s.title.toLowerCase().includes(q) || s.folder.toLowerCase().includes(q)));
+            $('listTitle').textContent = folder === null ? 'All Music' : niceFolder(folder);
+            if (songs.length) $('status').textContent = shown.length ? '' : 'No songs match.';
+            renderRows();
+        }
+
+        function renderRows() {
+            const body = $('songRows');
+            body.replaceChildren();
+            shown.forEach((s, i) => {
+                const tr = document.createElement('tr');
+                tr.className = s === nowSong ? 'playing' : '';
+                const cells = [s === nowSong ? '\u25B6' : i + 1, s.title, niceFolder(s.folder)];
+                cells.forEach((text, c) => {
+                    const td = document.createElement('td');
+                    if (c === 0) td.className = 'num';
+                    td.textContent = text;
+                    tr.appendChild(td);
+                });
+                tr.onclick = () => playSong(s);
+                body.appendChild(tr);
+            });
+        }
+
+        function playSong(s) {
+            nowSong = s;
+            audio.src = s.url;
+            audio.play().catch(() => {});
+            $('npTitle').textContent = s.title;
+            $('npAlbum').textContent = niceFolder(s.folder);
+            renderRows();
+        }
+
+        function step(dir, auto) {
+            if (!shown.length) return;
+            let i = shown.indexOf(nowSong);
+            if (shuffle && shown.length > 1) {
+                let j;
+                do { j = Math.floor(Math.random() * shown.length); } while (j === i);
+                i = j;
+            } else {
+                i += dir;
+                if (i >= shown.length) {
+                    if (repeat === 1 || !auto) i = 0;
+                    else { stopPlayback(); return; }
+                }
+                if (i < 0) i = shown.length - 1;
+            }
+            playSong(shown[i]);
+        }
+
+        function stopPlayback() {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+
+        $('play').onclick = () => {
+            if (!nowSong) { if (shown.length) playSong(shown[0]); return; }
+            audio.paused ? audio.play() : audio.pause();
+        };
+        $('stopBtn').onclick = stopPlayback;
+        $('nextBtn').onclick = () => step(1, false);
+        $('prevBtn').onclick = () => (audio.currentTime > 3 ? (audio.currentTime = 0) : step(-1, false));
+        $('shuffleBtn').onclick = e => { shuffle = !shuffle; e.currentTarget.classList.toggle('on', shuffle); };
+        $('repeatBtn').onclick = e => {
+            repeat = (repeat + 1) % 3;
+            e.currentTarget.classList.toggle('on', repeat > 0);
+            e.currentTarget.textContent = repeat === 2 ? '\u21BB1' : '\u21BB';
+            e.currentTarget.title = 'Repeat: ' + ['off', 'all', 'one'][repeat];
+        };
+
+        audio.addEventListener('play', () => { $('play').innerHTML = '&#10074;&#10074;'; });
+        audio.addEventListener('pause', () => { $('play').innerHTML = '&#9654;'; });
+        audio.addEventListener('ended', () => { repeat === 2 ? (audio.currentTime = 0, audio.play()) : step(1, true); });
+        audio.addEventListener('error', () => { if (nowSong) $('status').textContent = 'Could not play "' + nowSong.title + '". Is the bucket public?'; });
+        audio.addEventListener('loadedmetadata', () => { $('durTime').textContent = fmt(audio.duration); });
+        audio.addEventListener('timeupdate', () => {
+            $('curTime').textContent = fmt(audio.currentTime);
+            if (!seeking && audio.duration) {
+                $('seek').value = audio.currentTime / audio.duration * 1000;
+                setPct($('seek'));
+            }
+        });
+
+        const seek = $('seek');
+        seek.addEventListener('pointerdown', () => { seeking = true; });
+        seek.addEventListener('input', () => {
+            setPct(seek);
+            if (audio.duration) $('curTime').textContent = fmt(seek.value / 1000 * audio.duration);
+        });
+        seek.addEventListener('change', () => {
+            if (audio.duration) audio.currentTime = seek.value / 1000 * audio.duration;
+            seeking = false;
+        });
+
+        const vol = $('volume');
+        vol.addEventListener('input', () => {
+            audio.volume = vol.value / 100;
+            audio.muted = false;
+            $('mute').innerHTML = '&#128266;';
+            setPct(vol);
+        });
+        $('mute').onclick = () => {
+            audio.muted = !audio.muted;
+            $('mute').innerHTML = audio.muted ? '&#128263;' : '&#128266;';
+        };
+        audio.volume = 0.8;
+        setPct(vol);
+        setPct(seek);
+
+        $('search').addEventListener('input', applyFilter);
+        load();
+    </script>
+</body>
+</html>
