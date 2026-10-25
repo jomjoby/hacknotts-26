@@ -1,6 +1,6 @@
 /*
  * Loads our add-ons into the OS, which all live in this addons/ folder: Clippy, the retro browser,
- * the Control Panel (settings/), Paint and Purble Place (opened by index.js). FunForum (forum/) is a
+ * the Control Panel (settings/), Paint, the Media Player (music/) and Purble Place (opened by index.js). FunForum (forum/) is a
  * website shown inside the browser.
  * The OS only needs this one line in index.html:
  *
@@ -39,7 +39,7 @@
   addStyle('addons/settings/settings.css');
   addStyle('addons/paint/paint.css');
 
-  Promise.all([addScript('addons/clippy/clippy.js'), addScript('addons/browser/browser.js'), addScript('addons/settings/settings.js'), addScript('addons/paint/paint.js')])
+  Promise.all([addScript('addons/clippy/clippy.js'), addScript('addons/browser/browser.js'), addScript('addons/settings/settings.js'), addScript('addons/paint/paint.js'), addScript('addons/music/music-window.js')])
     .then(() => {
       // Settings that match the OS: its taskbar is 80px tall. The OS's openApp('firefox')
       // in index.js opens the browser when its Internet icon is clicked.
@@ -49,9 +49,18 @@
         name: 'Paint',
         aliases: ['paint', 'ms paint', 'mspaint', 'microsoft paint', 'drawing', 'draw'],
         tips: [
-          { text: "It looks like you're drawing! Tip: right-click paints with Color 2." },
-          { text: 'Tip: the fill bucket fills everything that is exactly the same colour. Close your shapes first!' },
-          { text: 'Masterpiece in progress? Ctrl+Z undoes, and the Paint menu saves it as a PNG.' },
+          { text: "It looks like you're drawing! Tip: pick a colour and it switches you back from the eraser." },
+          { text: 'Masterpiece in progress? Ctrl+Z undoes.' },
+          { text: 'Tip: Shapes has lines, boxes and ovals. Very Picasso.' },
+        ],
+      });
+      window.Clippy.registerApp({
+        id: 'media-player',
+        name: 'Media Player',
+        aliases: ['media player', 'windows media player', 'music player', 'music', 'songs', 'wmp'],
+        tips: [
+          { text: "It looks like you're listening to music! Tip: pick a genre on the left." },
+          { text: 'Tip: shuffle and repeat are next to the play button. Repeat One for your favourite song on loop.' },
         ],
       });
       window.Clippy.registerApp({

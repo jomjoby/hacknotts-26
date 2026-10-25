@@ -472,3 +472,25 @@ body{
 .emptyNote{
     opacity: 0.7;
 }
+
+/* Adverts: when the window is too narrow for the side bars (e.g. inside the OS browser),
+   show them as rows above and below the page instead of on top of it. */
+.sideBar img.advert{
+    width: 150px;
+}
+
+@media (max-width: 1200px){
+    #leftBar, #rightBar{
+        position: static;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+        width: auto;
+        margin: 15px 0;
+    }
+
+    .sideBar img{
+        margin-bottom: 0;
+    }
+}

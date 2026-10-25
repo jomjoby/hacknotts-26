@@ -19,8 +19,9 @@ They all start a server on port 8000 (or just reopen the OS if it's already runn
 | `addons/addons.js` | Loads the add-ons into the OS (one `<script>` line in `index.html`) |
 | `addons/clippy/` | Clippy, the desktop assistant |
 | `addons/browser/` | The retro Firefox-style browser and its built-in sites (NottsNet, YouTube) |
-| `addons/forum/` | FunForum, shown inside the browser at www.funforum.co.uk |
+| `addons/forum/` | FunForum, shown inside the browser at www.funforum.co.uk. Adverts: `ads.js` + `images/ads/` |
 | `addons/purble-place/` | Purble Place (`addons/purble-place-bundle.js` is a one-file copy for pages opened as a file, and `addons/purble-place-sounds.js` carries its sounds there; rebuild with `python addons/build-purble-sounds.py`) |
 | `addons/paint/` | Paint |
+| `addons/music/` | Media Player (songs from Supabase storage), opened in a window by `music-window.js` |
 | `addons/settings/` | The Control Panel |
 | `start.sh`, `start.bat`, `Start OS (Mac).command`, `addons/serve.py` | Run the OS from a local server |

@@ -146,6 +146,11 @@ function openApp(app) {
             if (window.PaintApp) PaintApp.open();
             break;
 
+        case "media-player":
+            // The Media Player (addons/music/), loaded by addons/addons.js.
+            if (window.MusicApp) MusicApp.open();
+            break;
+
         case "control-panel":
             // The Control Panel (addons/settings/), loaded by addons/addons.js.
             if (window.SettingsApp) SettingsApp.open();

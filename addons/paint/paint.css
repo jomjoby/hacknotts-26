@@ -8,88 +8,6 @@
   outline: none;
 }
 
-/* ---- tabs row: the blue Paint button, Home tab, quick access buttons ---- */
-
-.pt-tabs {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 26px;
-  padding: 0 6px;
-  background: linear-gradient(#dfe9f5, #d4e2f2);
-}
-
-.pt-appmenu { position: relative; }
-
-.pt-appbutton {
-  height: 23px;
-  padding: 0 14px;
-  border: 1px solid #2a5d9a;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
-  background: linear-gradient(#5f9ee6, #2b6cc4 50%, #1d58ad 51%, #3a82d8);
-  color: #fff;
-  font: 12px "Segoe UI", Tahoma, sans-serif;
-  cursor: pointer;
-}
-
-.pt-appbutton:hover { filter: brightness(1.1); }
-
-.pt-dropdown {
-  position: absolute;
-  top: 23px;
-  left: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  min-width: 170px;
-  padding: 4px;
-  border: 1px solid #8ba8cf;
-  background: #fff;
-  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.3);
-}
-
-.pt-dropdown[hidden] { display: none; }
-.pt-dropdown hr { width: 100%; margin: 3px 0; border: 0; border-top: 1px solid #dde4ee; }
-
-.pt-dropdown button {
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: none;
-  font: inherit;
-  color: #000;
-  text-align: left;
-  cursor: pointer;
-}
-
-.pt-dropdown button:hover { border-color: #a8d8f0; background: linear-gradient(#f2f9fd, #dceffd); }
-
-.pt-tab {
-  padding: 3px 14px;
-  border: 1px solid #b6c6d8;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
-  background: linear-gradient(#fdfeff, #f1f6fc);
-}
-
-.pt-quick { display: flex; gap: 2px; margin: 0 0 3px auto; }
-
-.pt-quick button,
-.pt-tool,
-.pt-size {
-  display: grid;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: none;
-  cursor: pointer;
-}
-
-.pt-quick button { width: 22px; height: 20px; padding: 0; }
-.pt-quick button svg { width: 14px; height: 14px; }
-.pt-quick button:disabled { opacity: 0.4; cursor: default; }
-
 /* ---- the ribbon ---- */
 
 .pt-ribbon {
@@ -121,30 +39,37 @@
   font-size: 11px;
 }
 
-.pt-tools, .pt-shapes { display: grid; grid-template-columns: repeat(3, 24px); gap: 2px; }
-.pt-shapes { grid-template-columns: repeat(4, 24px); }
-.pt-tool { width: 24px; height: 24px; padding: 0; }
-.pt-tool svg { width: 18px; height: 18px; }
+.pt-tools, .pt-shapes { display: flex; gap: 2px; }
 
-.pt-tool:hover, .pt-size:hover, .pt-quick button:hover:not(:disabled), .pt-colourbox:hover, .pt-edit:hover {
+.pt-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 54px;
+  height: 64px;
+  padding: 6px 2px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.pt-tool svg { width: 28px; height: 28px; flex: none; }
+
+.pt-tool:hover, .pt-edit:hover {
   border-color: #a8d8f0;
   background: linear-gradient(#f2f9fd, #dceffd);
 }
 
-.pt-tool.on, .pt-size.on, .pt-colourbox.on {
+.pt-tool.on {
   border-color: #78aee5;
   background: linear-gradient(#dcecfc, #c1dcf8);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
 }
-
-.pt-big { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 54px; height: 64px; padding: 4px; font: inherit; color: inherit; }
-.pt-big svg { width: 32px; height: 32px; }
-
-.pt-fillopt { position: absolute; left: 8px; top: 34px; white-space: nowrap; }
-
-.pt-sizes { display: flex; flex-direction: column; gap: 2px; }
-.pt-size { width: 70px; height: 15px; padding: 0 6px; }
-.pt-size span { display: block; width: 100%; background: #000; }
 
 .pt-colours { gap: 6px; }
 
@@ -156,16 +81,9 @@
   width: 50px;
   height: 64px;
   padding: 4px 2px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
 }
 
 .pt-swatch { width: 30px; height: 30px; border: 1px solid #555; box-shadow: inset 0 0 0 2px #fff; }
-.pt-colourbox[data-slot="2"] .pt-swatch { width: 24px; height: 24px; margin: 3px 0; }
 
 .pt-palette { display: grid; grid-template-columns: repeat(10, 18px); gap: 2px; padding-top: 4px; }
 
@@ -218,42 +136,3 @@
 .pt-stage { position: relative; display: inline-block; vertical-align: top; box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25); }
 .pt-canvas { display: block; background: #fff; touch-action: none; }
 .pt-overlay { position: absolute; inset: 0; pointer-events: none; }
-
-.pt-handle {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  width: 6px;
-  height: 6px;
-  border: 1px solid #555;
-  background: #fff;
-  cursor: nwse-resize;
-  touch-action: none;
-}
-
-.pt-textbox {
-  position: absolute;
-  min-width: 120px;
-  min-height: 24px;
-  padding: 2px;
-  border: 1px dashed #3c7fb1;
-  background: transparent;
-  font-family: "Segoe UI", Tahoma, sans-serif;
-  line-height: 1.25;
-  resize: both;
-  outline: none;
-}
-
-.pt-status {
-  display: flex;
-  gap: 30px;
-  height: 22px;
-  padding: 0 10px;
-  align-items: center;
-  background: linear-gradient(#f0f4f9, #dfe8f2);
-  border-top: 1px solid #b6c6d8;
-  font-size: 11px;
-}
-
-.pt-pos { min-width: 80px; }
-.pt-zoom { margin-left: auto; }
