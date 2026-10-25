@@ -3,6 +3,30 @@ body{
     background: url(../../images/pattern.jpg) repeat;
 }
 
+.sideBar{
+    display: flex;
+    flex-direction: column;
+    width: 150px;
+    border: 2px inset black; /* Remove this once the adverts work */
+    top: 250px;
+}
+
+.sideBar img{
+    margin-bottom: 40px;
+
+    /*Add the border here*/
+}
+
+#leftBar{
+    position: absolute;
+    left: 20px;
+}
+
+#rightBar{
+    position: absolute;
+    right: 20px;
+}
+
 #mainBar{
     display: flex;
     flex-direction: column;
