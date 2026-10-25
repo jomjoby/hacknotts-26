@@ -86,33 +86,27 @@ body {
 
 .taskbar {
     position: fixed;
-    z-index: 9000; /* always above open windows (they start at 100) */
-    bottom: 0px;
-    left: 0px;
-    right: 0px;
+    z-index: 9000;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 45px;
 
-    background: var(--glass-sheen), var(--glass-tint);
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    box-sizing: border-box;
 
+    background: var(--glass-sheen), var(--glass-tint);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-
     border-top: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 0px;
-
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
-
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 0 4px;
-    box-sizing: border-box;
 }
 
 .taskbar-btn
 {
-    margin: 4px;
+    /* margin: 4px; */
     background: linear-gradient(
     to bottom,
     rgba(180, 210, 235, 0.35),
@@ -125,24 +119,29 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.45);
 
     width: 50px;
-    height: 100%;
+    /* height: 100%; */
     border-radius: 9px;
 
     contain: content;
 
     cursor: pointer;
 
+    margin: 2px;
+    height: calc(100% - 4px);
+    box-sizing: border-box;
+
 }
 
-.start-orb
-{
+.start-orb {
     background: none;
     border: 1px solid rgba(255, 255, 255, 0.45);
     backdrop-filter: none;
     width: 70px;
-    margin: 6px 6px;
-    border-radius: 20px;
-
+    height: auto;
+    margin: 4px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    align-self: stretch;
 }
 
 .start-orb:hover {
@@ -456,7 +455,9 @@ body {
     animation: os-window-open 0.18s ease-out;
 }
 
-.os-window.os-minimised { display: none; }
+.os-window.os-minimised {
+    display: none !important;
+}
 .os-window.os-maximised { border-radius: 0; }
 
 @keyframes os-window-open {

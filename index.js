@@ -9,6 +9,35 @@ function startMenu() {
     }
 }
 
+let desktopShown = false;
+let windowsHiddenByShowDesktop = [];
+
+function showDesktop()
+{
+    if (!desktopShown) {
+        // Hide windows that are currently visible
+        const windows = document.querySelectorAll('.os-window');
+
+        windowsHiddenByShowDesktop = Array.from(windows).filter(
+            win => !win.classList.contains('os-minimised')
+        );
+
+        windowsHiddenByShowDesktop.forEach(win => {
+            win.classList.add('os-minimised');
+        });
+
+        desktopShown = true;
+    } else {
+        // Restore only the windows hidden by this button
+        windowsHiddenByShowDesktop.forEach(win => {
+            win.classList.remove('os-minimised');
+        });
+
+        windowsHiddenByShowDesktop = [];
+        desktopShown = false;
+    }
+}
+
 // ---- Start menu search ----
 // Like Windows 7: typing lists the matching programs, plus searching the internet or asking Clippy.
 // Enter opens the top result, Escape clears the search (or closes the menu).
