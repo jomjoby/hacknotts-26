@@ -134,7 +134,7 @@
         <h1>Adjust your computer's settings</h1>
         <div class="cp-categories">
           ${category('personalise', 'Appearance and Personalization', 'personalise', ['Change desktop background', 'Change window colours'])}
-          ${category('clippy', 'Clippy', 'clippy', ['Show or hide Clippy', 'Change how Clippy thinks'])}
+          ${category('clippy', 'Clippy', 'clippy', ['Show or hide Clippy', 'Tips and voice'])}
           ${category('internet', 'Network and Internet', 'internet', ['Change your home page', 'Choose the year of the web'])}
           ${category('desktop', 'Desktop', 'desktop', ['Tidy up desktop icons'])}
           ${category('system', 'System and Security', 'system', ['View basic information about your computer'])}
@@ -172,12 +172,7 @@
           <p class="cp-lead">Clippy is your desktop assistant. Click him, or press F1, to ask him anything.</p>
           <label class="cp-check"><input type="checkbox" id="cp-clippy-visible" ${c.visible ? 'checked' : ''}> Show Clippy on the desktop</label>
           <label class="cp-check"><input type="checkbox" id="cp-clippy-tips" ${c.tips ? 'checked' : ''}> Let Clippy pop up with tips</label>
-          <label class="cp-check"><input type="checkbox" id="cp-clippy-voice" ${c.voice ? 'checked' : ''}> Read Clippy's replies aloud</label>
-          <h2>Clippy's brain</h2>
-          <div class="cp-options">
-            ${[['classic', 'Classic', 'Instant, works offline.'], ['local', 'Built-in AI', 'Free, no account. About 1GB download the first time. Needs Chrome or Edge.'], ['claude', 'Claude', 'Smartest. Needs an Anthropic API key, which Clippy will ask for.']]
-              .map(([id, name, note]) => `<label class="cp-radio"><input type="radio" name="cp-brain" value="${id}" ${c.brain === id ? 'checked' : ''}> <b>${name}</b> <span>${note}</span></label>`).join('')}
-          </div>`;
+          <label class="cp-check"><input type="checkbox" id="cp-clippy-voice" ${c.voice ? 'checked' : ''}> Read Clippy's replies aloud</label>`;
       },
     },
 
@@ -359,7 +354,6 @@
     else if (t.id === 'cp-clippy-visible' && clippy) (t.checked ? clippy.show() : clippy.hide());
     else if (t.id === 'cp-clippy-tips' && clippy) clippy.setChattiness(t.checked ? 'normal' : 'quiet');
     else if (t.id === 'cp-clippy-voice' && clippy) clippy.setVoice(t.checked);
-    else if (t.name === 'cp-brain' && clippy) clippy.setBrain(t.value).then(() => { if (win) render(); });
   }
 
   window.SettingsApp = {

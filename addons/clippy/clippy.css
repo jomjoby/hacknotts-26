@@ -160,24 +160,6 @@
   padding: 0 4px;
 }
 
-.clippy-ask .clippy-settings {
-  display: grid;
-  place-items: center;
-  padding: 0 4px;
-}
-
-.clippy-settings svg { width: 14px; height: 14px; }
-.clippy-settings circle { fill: #555; }
-.clippy-settings .clippy-cog { fill: none; stroke: #555; stroke-width: 3; stroke-dasharray: 2.4 1.53; }
-
-.clippy-progress {
-  margin-top: 6px;
-  font-size: 11px;
-  color: #1b5fbf;
-}
-
-.clippy-progress[hidden] { display: none; }
-
 .clippy-voice svg { width: 14px; height: 14px; }
 .clippy-voice path { fill: #555; }
 .clippy-voice .clippy-waves { fill: none; stroke: #555; stroke-width: 1.4; stroke-linecap: round; opacity: 0.25; }
