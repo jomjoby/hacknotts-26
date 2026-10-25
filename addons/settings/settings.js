@@ -232,7 +232,7 @@
           <h2>Computer name and team</h2>
           <table class="cp-info">
             <tr><td>Computer name</td><td>HACKNOTTS-PC</td></tr>
-            <tr><td>Workgroup</td><td>jomjoby (OS), Anand20003831 (Clippy and the browser), limit10k (FunForum), Manraj Rakhra (Purble Place)</td></tr>
+            <tr><td>Workgroup</td><td>jomjoby (OS), Anand20003831 (Clippy and the browser), Adam, limit10k (FunForum), Manraj Rakhra (Purble Place)</td></tr>
           </table>`;
       },
     },

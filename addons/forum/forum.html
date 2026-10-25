@@ -25,7 +25,7 @@
         <div id="mainBody">
             <section class="forumSection">
                 <h1>Forum</h1>
-                <p>Welcome to the community chat. Anyone can read the conversation, but you need an account to join in.</p>
+                <p>Welcome to the community chat. Anyone can read the threads, but you need an account to start one or reply.</p>
                 <p id="forumStatus" class="forumStatus">Checking login status...</p>
             </section>
 
@@ -38,12 +38,38 @@
                 </div>
                 <h2 id="channelTitle">General Chat</h2>
                 <p id="channelDesc"></p>
-                <div id="chatBox" aria-live="polite"></div>
-                <form id="chatForm" hidden>
-                    <input type="text" id="chatInput" maxlength="500" placeholder="Type a message..." autocomplete="off" required>
-                    <label id="spoilerLabel"><input type="checkbox" id="spoilerCheck"> Spoiler</label>
-                    <button type="submit" id="chatSend">Send</button>
-                </form>
+
+                <!-- The threads in this section -->
+                <div id="threadListView">
+                    <div class="threadToolbar">
+                        <span id="threadCount"></span>
+                        <button type="button" id="newThreadBtn" class="glassButton" hidden>+ New thread</button>
+                    </div>
+                    <form id="newThreadForm" class="threadForm" hidden>
+                        <input type="text" id="threadTitleInput" maxlength="100" placeholder="Thread title" autocomplete="off" required>
+                        <textarea id="threadBodyInput" maxlength="500" rows="3" placeholder="First post..." required></textarea>
+                        <div class="threadFormRow">
+                            <label id="threadSpoilerLabel"><input type="checkbox" id="threadSpoilerCheck"> Spoiler</label>
+                            <span class="threadHint">Start the title with <b>[News]</b> to put it on the News page.</span>
+                            <button type="button" id="cancelThreadBtn" class="glassButton">Cancel</button>
+                            <button type="submit" id="postThreadBtn" class="sendButton">Post thread</button>
+                        </div>
+                    </form>
+                    <div id="threadList"></div>
+                </div>
+
+                <!-- One open thread -->
+                <div id="threadView" hidden>
+                    <button type="button" id="backToThreads" class="glassButton">&laquo; All threads</button>
+                    <h3 id="threadTitle"></h3>
+                    <p id="threadMeta" class="threadMeta"></p>
+                    <div id="chatBox" aria-live="polite"></div>
+                    <form id="chatForm" hidden>
+                        <input type="text" id="chatInput" maxlength="500" placeholder="Type a reply..." autocomplete="off" required>
+                        <label id="spoilerLabel"><input type="checkbox" id="spoilerCheck"> Spoiler</label>
+                        <button type="submit" id="chatSend">Send</button>
+                    </form>
+                </div>
                 <p id="chatError"></p>
             </section>
 
@@ -53,6 +79,7 @@
                     <li>Be respectful to other members.</li>
                     <li>No spam or advertising.</li>
                     <li>Keep messages under 500 characters.</li>
+                    <li>Only use <b>[News]</b> in a title for real news, it goes on the front page!</li>
                     <li>Have fun!</li>
                 </ol>
             </section>
@@ -74,6 +101,18 @@
         const chatSend = document.getElementById('chatSend');
         const chatError = document.getElementById('chatError');
 
+        const threadListView = document.getElementById('threadListView');
+        const threadList = document.getElementById('threadList');
+        const threadCount = document.getElementById('threadCount');
+        const threadView = document.getElementById('threadView');
+        const threadTitle = document.getElementById('threadTitle');
+        const threadMeta = document.getElementById('threadMeta');
+        const newThreadBtn = document.getElementById('newThreadBtn');
+        const newThreadForm = document.getElementById('newThreadForm');
+        const threadTitleInput = document.getElementById('threadTitleInput');
+        const threadBodyInput = document.getElementById('threadBodyInput');
+        const postThreadBtn = document.getElementById('postThreadBtn');
+
         // The keys here must match the channels allowed in the database
         const CHANNELS = {
             'general':   { title: 'General Chat',   desc: 'Talk about anything and everything.' },
@@ -85,6 +124,14 @@
         const channelDesc = document.getElementById('channelDesc');
         const tabButtons = document.querySelectorAll('#channelTabs button');
         let currentChannel = 'general';
+
+        // Which thread is open: null = the list of threads, 'chat' = the section's original chat
+        // (messages from before threads existed), or a thread's id.
+        let currentThread = null;
+        let loggedIn = false;
+
+        // A thread whose title starts with [News] or News: also appears on the News page.
+        const NEWS_PATTERN = /^\s*(\[news\]|news:)\s*/i;
 
         const shownIds = new Set();      // stops the same message appearing twice
         const usernameCache = {};        // user_id -> username
@@ -103,7 +150,7 @@
 
             const time = document.createElement('span');
             time.className = 'chatTime';
-            time.textContent = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            time.textContent = formatWhen(msg.created_at);
 
             const text = document.createElement('span');
             text.className = 'chatText';
@@ -143,6 +190,48 @@
             if (atBottom) chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // Today's messages show the time; older ones the date as well.
+        function formatWhen(iso) {
+            const d = new Date(iso);
+            const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return d.toDateString() === new Date().toDateString() ? time : d.toLocaleDateString() + ' ' + time;
+        }
+
+        // One row in the thread list
+        function addThreadRow(thread) {
+            const row = document.createElement('a');
+            row.className = 'threadRow';
+            row.href = '#' + currentChannel + '/' + thread.id;
+            row.addEventListener('click', (e) => { e.preventDefault(); openThread(thread.id); });
+
+            const title = document.createElement('span');
+            title.className = 'threadTitle';
+            if (thread.news) {
+                const tag = document.createElement('span');
+                tag.className = 'newsTag';
+                tag.textContent = 'NEWS';
+                title.appendChild(tag);
+            }
+            if (thread.pinned) {
+                const tag = document.createElement('span');
+                tag.className = 'pinTag';
+                tag.textContent = 'PINNED';
+                title.appendChild(tag);
+            }
+            title.append(thread.title);
+
+            const meta = document.createElement('span');
+            meta.className = 'threadMeta';
+            meta.textContent = thread.meta;
+
+            const posts = document.createElement('span');
+            posts.className = 'threadPosts';
+            posts.textContent = thread.posts + (thread.posts === 1 ? ' post' : ' posts');
+
+            row.append(title, meta, posts);
+            threadList.appendChild(row);
+        }
+
         async function getUsername(userId) {
             if (usernameCache[userId]) return usernameCache[userId];
             const { data } = await sb.from('profiles').select('username').eq('id', userId).single();
@@ -150,17 +239,66 @@
             return usernameCache[userId];
         }
 
-        // ---------- Load history ----------
-        async function loadMessages(channel) {
-            const { data, error } = await sb
+        // ---------- Load the threads in a section ----------
+        async function loadThreads(channel) {
+            const [threads, oldChat] = await Promise.all([
+                sb.from('threads')
+                    .select('id, title, created_at, profiles(username), messages(count)')
+                    .eq('channel', channel)
+                    .order('created_at', { ascending: false })
+                    .limit(50),
+                sb.from('messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('channel', channel)
+                    .is('thread_id', null)
+            ]);
+
+            // User switched tabs while this was loading: ignore the stale result
+            if (channel !== currentChannel || currentThread !== null) return;
+
+            if (threads.error) {
+                chatError.textContent = 'Could not load threads: ' + threads.error.message;
+                return;
+            }
+
+            threadList.replaceChildren();
+            // The section's original chat (from before threads) is pinned at the top
+            if (oldChat.count) {
+                addThreadRow({
+                    id: 'chat', title: CHANNELS[channel].title + ' (the original chat)', pinned: true,
+                    meta: 'Where it all began', posts: oldChat.count
+                });
+            }
+            threads.data.forEach(t => addThreadRow({
+                id: t.id,
+                title: t.title.replace(NEWS_PATTERN, ''),
+                news: NEWS_PATTERN.test(t.title),
+                meta: 'by ' + (t.profiles ? t.profiles.username : 'Unknown') + ', ' + formatWhen(t.created_at),
+                posts: t.messages[0] ? t.messages[0].count : 0
+            }));
+
+            threadCount.textContent = threads.data.length === 1 ? '1 thread' : threads.data.length + ' threads';
+            if (!threadList.children.length) {
+                const empty = document.createElement('p');
+                empty.className = 'threadEmpty';
+                empty.textContent = loggedIn ? 'No threads yet. Start the first one!' : 'No threads yet. Log in to start the first one!';
+                threadList.appendChild(empty);
+            }
+        }
+
+        // ---------- Load the messages in a thread ----------
+        async function loadMessages(channel, thread) {
+            let query = sb
                 .from('messages')
                 .select('id, content, created_at, user_id, is_spoiler, profiles(username)')
-                .eq('channel', channel)
+                .eq('channel', channel);
+            query = thread === 'chat' ? query.is('thread_id', null) : query.eq('thread_id', thread);
+            const { data, error } = await query
                 .order('created_at', { ascending: false })
                 .limit(50);
 
-            // User switched tabs while this was loading: ignore the stale result
-            if (channel !== currentChannel) return;
+            // User switched thread while this was loading: ignore the stale result
+            if (channel !== currentChannel || thread !== currentThread) return;
 
             if (error) {
                 chatError.textContent = 'Could not load messages: ' + error.message;
@@ -176,17 +314,22 @@
         }
 
         // ---------- Live updates ----------
-        function listenForMessages() {
+        function listenForChanges() {
             sb.channel('public-messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
                     const m = payload.new;
                     if (m.channel !== currentChannel) return; // belongs to a different tab
-                    addMessage(m, await getUsername(m.user_id));
+                    if (currentThread === null) { loadThreads(currentChannel); return; } // post counts changed
+                    const sameThread = currentThread === 'chat' ? m.thread_id === null : m.thread_id === currentThread;
+                    if (sameThread) addMessage(m, await getUsername(m.user_id));
+                })
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'threads' }, (payload) => {
+                    if (payload.new.channel === currentChannel && currentThread === null) loadThreads(currentChannel);
                 })
                 .subscribe();
         }
 
-        // ---------- Sending ----------
+        // ---------- Sending a reply ----------
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const content = chatInput.value.trim();
@@ -200,6 +343,7 @@
             const { error } = await sb.from('messages').insert({
                 content,
                 channel: currentChannel,
+                thread_id: currentThread === 'chat' ? null : currentThread,
                 is_spoiler: spoilerCheck.checked
             });
 
@@ -214,18 +358,72 @@
             chatInput.focus();
         });
 
+        // ---------- Starting a thread ----------
+        newThreadBtn.addEventListener('click', () => {
+            newThreadForm.hidden = false;
+            newThreadBtn.hidden = true;
+            threadTitleInput.focus();
+        });
+
+        document.getElementById('cancelThreadBtn').addEventListener('click', () => {
+            newThreadForm.reset();
+            newThreadForm.hidden = true;
+            newThreadBtn.hidden = false;
+        });
+
+        newThreadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = threadTitleInput.value.trim();
+            const content = threadBodyInput.value.trim();
+            if (!title || !content) return;
+
+            postThreadBtn.disabled = true;
+            chatError.textContent = '';
+
+            // created_by is filled in by the database from the logged-in session
+            const { data: thread, error } = await sb.from('threads')
+                .insert({ title, channel: currentChannel })
+                .select('id')
+                .single();
+
+            if (error) {
+                postThreadBtn.disabled = false;
+                chatError.textContent = 'Could not start the thread: ' + error.message;
+                return;
+            }
+
+            // The first post goes in as the thread's first message
+            const spoilerCheck = document.getElementById('threadSpoilerCheck');
+            const { error: postError } = await sb.from('messages').insert({
+                content,
+                channel: currentChannel,
+                thread_id: thread.id,
+                is_spoiler: spoilerCheck.checked
+            });
+
+            postThreadBtn.disabled = false;
+            if (postError) chatError.textContent = 'The thread was made, but the first post failed: ' + postError.message;
+
+            newThreadForm.reset();
+            newThreadForm.hidden = true;
+            newThreadBtn.hidden = false;
+            openThread(thread.id);
+        });
+
         // ---------- Login state ----------
         async function setupAuth() {
             const { data: { session } } = await sb.auth.getSession();
 
             if (!session) {
-                forumStatus.innerHTML = 'You are not logged in. <a href="flog.html">Log in or register</a> to join the chat.';
+                forumStatus.innerHTML = 'You are not logged in. <a href="flog.html">Log in or register</a> to start threads and reply.';
                 return;
             }
 
             const username = await getUsername(session.user.id);
             forumStatus.textContent = 'Logged in as ' + username;
+            loggedIn = true;
             chatForm.hidden = false;
+            newThreadBtn.hidden = !newThreadForm.hidden;
 
             navAuth.textContent = 'Logout';
             navAuth.href = '#';
@@ -236,29 +434,72 @@
             };
         }
 
+        // ---------- Switching between the thread list and a thread ----------
+        function showThreadList() {
+            currentThread = null;
+            threadView.hidden = true;
+            threadListView.hidden = false;
+            chatError.textContent = '';
+            history.replaceState(null, '', '#' + currentChannel); // so a refresh stays in the same place
+            loadThreads(currentChannel);
+        }
+
+        async function openThread(id) {
+            currentThread = id;
+            threadListView.hidden = true;
+            threadView.hidden = false;
+            chatBox.replaceChildren();
+            shownIds.clear();
+            chatError.textContent = '';
+            history.replaceState(null, '', '#' + currentChannel + '/' + id);
+
+            if (id === 'chat') {
+                threadTitle.textContent = CHANNELS[currentChannel].title + ' (the original chat)';
+                threadMeta.textContent = 'The messages from before threads existed. You can still reply here.';
+            } else {
+                threadTitle.textContent = 'Loading...';
+                threadMeta.textContent = '';
+                const { data } = await sb.from('threads')
+                    .select('title, channel, created_at, profiles(username)')
+                    .eq('id', id)
+                    .single();
+                if (currentThread !== id) return;
+                if (!data) {
+                    showThreadList();
+                    return;
+                }
+                threadTitle.textContent = data.title;
+                threadMeta.textContent = 'Started by ' + (data.profiles ? data.profiles.username : 'Unknown') + ', ' + formatWhen(data.created_at);
+            }
+            chatInput.placeholder = 'Reply to this thread...';
+            loadMessages(currentChannel, id);
+        }
+
+        document.getElementById('backToThreads').addEventListener('click', showThreadList);
+
         // ---------- Channel switching ----------
-        function switchChannel(channel) {
+        function switchChannel(channel, thread) {
             if (!CHANNELS[channel]) channel = 'general';
             currentChannel = channel;
 
             tabButtons.forEach(b => b.classList.toggle('active', b.dataset.channel === channel));
             channelTitle.textContent = CHANNELS[channel].title;
             channelDesc.textContent = CHANNELS[channel].desc;
-            chatInput.placeholder = 'Message ' + CHANNELS[channel].title.replace(' Chat', '') + '...';
 
-            chatBox.replaceChildren();
-            shownIds.clear();
-            chatError.textContent = '';
-            history.replaceState(null, '', '#' + channel); // so a refresh stays on the same tab
+            newThreadForm.reset();
+            newThreadForm.hidden = true;
+            newThreadBtn.hidden = !loggedIn;
 
-            loadMessages(channel);
+            if (thread) openThread(thread === 'chat' ? 'chat' : Number(thread));
+            else showThreadList();
         }
 
         tabButtons.forEach(b => b.addEventListener('click', () => switchChannel(b.dataset.channel)));
 
-        setupAuth();
-        switchChannel(location.hash.slice(1)); // opens #games, #sports etc. if present
-        listenForMessages();
+        // Opens #games, #games/12 (a thread) or #games/chat (the original chat) if present
+        const [startChannel, startThread] = location.hash.slice(1).split('/');
+        setupAuth().then(() => switchChannel(startChannel, startThread));
+        listenForChanges();
     </script>
 </body>
 </html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage</title>
+    <title>News</title>
     <link rel="stylesheet" href="fhome.css">
     <link rel="icon" type="image/x-icon">
 </head>
@@ -23,7 +23,26 @@
             </nav>
         </div>
         <div id="mainBody">
-            hi, this is the about. me jom manraj and anaad made this.
+            <section class="forumSection">
+                <h1>FunForum News</h1>
+                <p class="forumStatus">Hot off the press, straight from the forum: any thread whose title starts with <b>[News]</b> (or <b>News:</b>) shows up here. Want to make the news? <a href="forum.html">Start a thread</a>.</p>
+            </section>
+
+            <section class="forumSection">
+                <div id="channelTabs" role="tablist">
+                    <button type="button" data-channel="all" class="active">All news</button>
+                    <button type="button" data-channel="general">General</button>
+                    <button type="button" data-channel="games">Games</button>
+                    <button type="button" data-channel="movies-tv">Movies &amp; TV</button>
+                    <button type="button" data-channel="sports">Sports</button>
+                </div>
+                <div id="newsList"><p class="emptyNote">Loading the news...</p></div>
+            </section>
+
+            <section class="forumSection">
+                <h2>About FunForum</h2>
+                <p>FunForum was made by Adam, Jom, Manraj and Anand for HackNotts 26.</p>
+            </section>
         </div>
     </div>
 
@@ -52,6 +71,101 @@
             };
         }
         updateLoginState();
+
+        // ---------- News: made from forum threads, no editing needed ----------
+        // Same sections as the forum page
+        const CHANNELS = {
+            'general':   { title: 'General Chat' },
+            'games':     { title: 'Game Chat' },
+            'movies-tv': { title: 'Movie & TV Chat' },
+            'sports':    { title: 'Sports Chat' }
+        };
+
+        // A thread whose title starts with [News] or News: is news
+        const NEWS_PATTERN = /^\s*(\[news\]|news:)\s*/i;
+
+        const newsList = document.getElementById('newsList');
+        const tabButtons = document.querySelectorAll('#channelTabs button');
+        let allNews = [];
+
+        async function loadNews() {
+            // The newest threads, each with its first post (the story) and how many posts it has
+            const [threads, counts] = await Promise.all([
+                sb.from('threads')
+                    .select('id, title, channel, created_at, profiles(username), messages(content, is_spoiler, created_at)')
+                    .order('created_at', { ascending: false })
+                    .order('created_at', { referencedTable: 'messages', ascending: true })
+                    .limit(1, { referencedTable: 'messages' })
+                    .limit(200),
+                sb.from('threads').select('id, messages(count)').order('created_at', { ascending: false }).limit(200)
+            ]);
+
+            if (threads.error) {
+                newsList.replaceChildren();
+                const p = document.createElement('p');
+                p.className = 'emptyNote';
+                p.textContent = 'Could not load the news: ' + threads.error.message;
+                newsList.appendChild(p);
+                return;
+            }
+
+            const postCounts = {};
+            (counts.data || []).forEach(t => { postCounts[t.id] = t.messages[0] ? t.messages[0].count : 0; });
+
+            allNews = threads.data
+                .filter(t => NEWS_PATTERN.test(t.title))
+                .map(t => ({ ...t, posts: postCounts[t.id] || 0 }));
+            showNews('all');
+        }
+
+        function showNews(channel) {
+            tabButtons.forEach(b => b.classList.toggle('active', b.dataset.channel === channel));
+            newsList.replaceChildren();
+
+            const news = allNews.filter(t => channel === 'all' || t.channel === channel);
+            if (!news.length) {
+                const p = document.createElement('p');
+                p.className = 'emptyNote';
+                p.textContent = 'No news here yet. Start a thread called "[News] ..." in the forum and it will appear here.';
+                newsList.appendChild(p);
+                return;
+            }
+
+            news.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'newsItem';
+                const link = 'forum.html#' + t.channel + '/' + t.id;
+
+                const h3 = document.createElement('h3');
+                const a = document.createElement('a');
+                a.href = link;
+                a.textContent = t.title.replace(NEWS_PATTERN, ''); // textContent (not innerHTML) so nobody can inject HTML
+                h3.appendChild(a);
+
+                const meta = document.createElement('p');
+                meta.className = 'threadMeta';
+                meta.textContent = new Date(t.created_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) +
+                    ' in ' + CHANNELS[t.channel].title + ', by ' + (t.profiles ? t.profiles.username : 'Unknown');
+
+                // The story is the thread's first post
+                const first = t.messages[0];
+                const body = document.createElement('p');
+                if (!first) body.textContent = '';
+                else if (first.is_spoiler) body.textContent = 'This story contains spoilers. Read it on the forum.';
+                else body.textContent = first.content;
+
+                const more = document.createElement('a');
+                more.href = link;
+                const replies = Math.max(0, t.posts - 1);
+                more.textContent = (replies === 1 ? '1 reply' : replies + ' replies') + ': join the discussion »';
+
+                item.append(h3, meta, body, more);
+                newsList.appendChild(item);
+            });
+        }
+
+        tabButtons.forEach(b => b.addEventListener('click', () => showNews(b.dataset.channel)));
+        loadNews();
     </script>
 </body>
 </html>
