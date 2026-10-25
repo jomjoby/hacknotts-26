@@ -534,6 +534,7 @@ function restoreFromBin(id) {
     }
 
     icons.forEach(icon => {
+      icon.addEventListener('dblclick', () => openApp(icon.dataset.id)); // like Windows: double-click opens
       icon.addEventListener('pointerdown', e => {
         if (e.button !== 0) return;
         select(icon);
@@ -553,10 +554,7 @@ function restoreFromBin(id) {
           icon.removeEventListener('pointermove', move);
           icon.removeEventListener('pointerup', up);
           icon.removeEventListener('pointercancel', up);
-          if (!dragging) {
-            openApp(icon.dataset.id);
-            return;
-}
+          if (!dragging) return; // a single click only selects; double-click opens (below)
           icon.classList.remove('dragging');
           icon.style.transform = '';
 

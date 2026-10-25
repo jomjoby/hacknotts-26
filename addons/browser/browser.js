@@ -487,8 +487,9 @@ function close() {
 
   function restore() {
     const el = win.el;
+    const wasMinimised = el.classList.contains('rb-minimized');
     el.classList.remove('rb-minimized');
-    if (win.taskbarBtn) {
+    if (wasMinimised && win.taskbarBtn) { // only animate back from the taskbar if it was actually minimised
         const w = el.getBoundingClientRect();
         const b = win.taskbarBtn.getBoundingClientRect();
         const dx = (b.left + b.width / 2) - (w.left + w.width / 2);
