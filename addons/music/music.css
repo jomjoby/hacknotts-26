@@ -1,0 +1,66 @@
+* {
+    box-sizing: border-box;
+}
+html, body{ height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; font: 13px "Segoe UI", Tahoma, sans-serif; color: #1b2a41; background: #e9eff8; }
+
+/* Top toolbar */
+#toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: linear-gradient(#f9fbfe, #d6e3f4); border-bottom: 1px solid #a9bdd8; }
+#back { color: #1a4f9c; text-decoration: none; }
+#back:hover { text-decoration: underline; }
+#appTitle { flex: 1; font-size: 16px; font-weight: 600; color: #1d3f6e; }
+#search { width: 200px; padding: 4px 8px; border: 1px solid #8aa5c9; border-radius: 3px; }
+
+/* Library pane + song list */
+#main { flex: 1; display: flex; min-height: 0; }
+#library { width: 210px; padding: 8px 0; overflow: auto; background: #f4f7fc; border-right: 1px solid #b7c9e2; }
+#library h2 { margin: 4px 12px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #3b5f92; }
+#folderList { margin: 0; padding: 0; list-style: none; }
+#folderList li { display: flex; justify-content: space-between; gap: 6px; padding: 5px 12px; cursor: pointer; border: 1px solid transparent; }
+#folderList li:hover { background: linear-gradient(#f5f9ff, #e3eefb); border-color: #cfdff4; }
+#folderList li.sel { background: linear-gradient(#e4f0ff, #c4dcf8); border-color: #8fb4e3; }
+#folderList .cnt { color: #6b83a6; }
+
+#listPane { flex: 1; min-width: 0; overflow: auto; background: #fff; }
+#listHead { padding: 12px 16px 6px; }
+#listTitle { margin: 0; font-size: 22px; font-weight: 300; color: #1d3f6e; }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+th { position: sticky; top: 0; padding: 4px 10px; text-align: left; font-weight: normal; color: #3b4f6e; background: linear-gradient(#fff, #eaf1fa); border: 1px solid #d3deed; }
+td { padding: 5px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 1px solid #f0f4fa; }
+.num { width: 50px; text-align: right; }
+th.title { width: 60%; }
+tbody tr { cursor: pointer; }
+tbody tr:nth-child(even) { background: #f7faff; }
+tbody tr:hover { background: #e8f2fd; }
+tbody tr.playing { font-weight: 600; background: linear-gradient(#d9ebff, #bcd9fa); }
+#status { margin: 0; padding: 8px 16px; color: #58708f; }
+
+/* Bottom control bar */
+#controls { padding: 6px 14px 10px; color: #fff; border-top: 1px solid #6d8fc2; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); background: linear-gradient(#34507d 0, #1b2f50 48%, #0d1b33 52%, #142643 100%); }
+#seekRow { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #bcd3f2; }
+#seek { flex: 1; }
+#btnRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+#nowPlaying { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#npTitle, #npAlbum { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#npAlbum { font-size: 11px; color: #9db8de; }
+#transport { display: flex; align-items: center; gap: 8px; }
+#volBox { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+#volume { width: 90px; }
+
+.cbtn { width: 32px; height: 32px; padding: 0; font-size: 14px; color: #e6f0ff; cursor: pointer; border: 1px solid #6e8fc0; border-radius: 50%; background: linear-gradient(#4b6da3, #1c3157 50%, #13264a 52%, #28477b); }
+.cbtn:hover { border-color: #a9ccff; box-shadow: 0 0 8px #5fb4ff; }
+.cbtn.on { color: #8fd0ff; box-shadow: 0 0 8px #5fb4ff; }
+#play { width: 52px; height: 52px; font-size: 20px; border: 2px solid #d9ecff; background: radial-gradient(circle at 50% 30%, #9fe0ff, #2f86d6 55%, #14509a); box-shadow: 0 0 12px #5fb4ff; }
+#play:hover { box-shadow: 0 0 18px #9fe0ff; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; cursor: pointer; border: 1px solid #05101f; border-radius: 3px; background: linear-gradient(#6cc1ff, #6cc1ff) no-repeat, #0b1626; background-size: var(--pct, 0%) 100%; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #1b4f8f; background: radial-gradient(circle at 50% 30%, #fff, #9fd4ff 60%, #3c8ad8); }
+input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #1b4f8f; background: #9fd4ff; }
+
+@media (max-width: 700px) {
+    #main { flex-direction: column; }
+    #library { width: auto; max-height: 110px; border-right: 0; border-bottom: 1px solid #b7c9e2; }
+    #btnRow { flex-wrap: wrap; }
+    #nowPlaying { flex-basis: 100%; }
+    #search { width: 120px; }
+}
