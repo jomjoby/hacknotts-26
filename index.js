@@ -1,6 +1,5 @@
 
 function startMenu() {
-<<<<<<< HEAD
     const menu = document.getElementById("start-menu");
     menu.classList.toggle("open");
     if (menu.classList.contains("open")) {
@@ -8,7 +7,6 @@ function startMenu() {
         runStartSearch();
         startSearch.focus();
     }
->>>>>>> 02123f1d63a3fcca9ebce5dffcecc5679f2dbfa6
 }
 
 // ---- Start menu search ----
