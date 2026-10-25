@@ -386,6 +386,27 @@
     colour_unknown: ["I don't know that colour. Try one of these: {list}."],
     wallpaper_set: ['New wallpaper: {name}. Very stylish.', 'Redecorated! Say hello to {name}.', "Wallpaper changed to {name}. Don't you look nice."],
     no_app: ["That isn't running right now, sorry!"],
+    cancelled: ['No worries, cancelled.', 'Okay, forget I asked.', 'Cancelled. I never liked that idea anyway.'],
+    offer_forum: ['Sounds like FunForum! I can make a thread for you. Want me to?', 'FunForum? I can start a thread, show you the news or just open it.'],
+    ask_title: ['What should the thread be called?', "Ooh, a new thread! What's the title?", 'Righto. What do you want to call it?'],
+    ask_body: ['What should the first post say? (Or skip it and write it yourself.)', 'Anything to say in the first post? You can skip this.'],
+    confirm_thread: ['Make "{title}" in {section}?', 'Ready to go: "{title}" in {section}. Shall I make it?'],
+    offer_youtube: ['Fancy a video? I can play a random one or search YouTube.', 'YouTube! Random classic, or shall I search for something?'],
+    ask_youtube: ['What should I search YouTube for?', 'What do you want to watch?'],
+    confirm_youtube: ['Search YouTube for "{query}"?'],
+    youtube_open: ['Opening YouTube. Broadcast yourself!', 'Off to YouTube!'],
+    offer_settings: ['I can change your window colour or wallpaper. Which one?', 'Fancy a makeover? I can change the colours or the wallpaper.'],
+    ask_colour: ['Which colour should the windows be?', 'Pick a colour!'],
+    confirm_colour: ['Make the windows {colour}?'],
+    ask_wallpaper: ['Which wallpaper do you want?', 'Pick a wallpaper!'],
+    confirm_wallpaper: ['Change the wallpaper to {name}?'],
+    offer_purble: ['Fancy a game? Purble Place has three!', 'Game time! Which one?'],
+    offer_web: ['I can search the web or take you to a website. Which?', 'Want to surf the web? I can search or go to an address.'],
+    ask_web: ['What should I search for?', 'What do you want to look up?'],
+    confirm_web: ['Search the web for "{query}"?'],
+    ask_address: ['Which website? Type an address, like www.youtube.com.', 'Where to? Type the address.'],
+    site_open: ['Off to {address}!', 'Dialling up {address}...'],
+    offer_paint: ['Feeling arty? I can open Paint for you.'],
     react: [
       'I know, right?',
       "Wild, isn't it?",
@@ -434,6 +455,7 @@
     lastEditable: null,
     focusedApp: null,
     choices: [],
+    ask: null, // when Clippy asked a question, this takes the next thing typed: answer => reply
     shown: new Set(), // one-off tips already given this session
     openCount: {},
     mouse: null,
@@ -1001,12 +1023,15 @@
     const where = inSection ? inSection[1] : text.replace(titleMatch ? titleMatch[1] : '', '');
     const section = FORUM_SECTIONS.find(([, , re]) => re.test(where));
     let title = titleMatch ? titleMatch[1].trim() : '';
-    if (title) title = title[0].toUpperCase() + title.slice(1);
+    if (title) title = capitalise(title);
+    if (!title) return threadWizard({ section: section && section[0] });
     if (!section) {
       return { text: line('forum_which'), choices: FORUM_SECTIONS.map(([id, name]) => ({ label: name, run: () => forumThread(id, title) })) };
     }
     return forumThread(section[0], title);
   }
+
+  const capitalise = text => text[0].toUpperCase() + text.slice(1);
 
   function forumThread(sectionId, title = '', body = '') {
     if (!window.RetroBrowser) return line('no_app');
@@ -1039,6 +1064,82 @@
     return line('colour_set', { colour });
   }
 
+  // ---- Guided offers ----
+  // When Clippy doesn't understand but spots a topic word ("forum", "youtube", "settings"...), it offers what
+  // it can do there, asks the questions it needs and checks before doing anything.
+
+  const askFor = (text, then) => ({ text, ask: then });
+  const confirm = (text, run, change) => ({
+    text,
+    choices: [{ label: 'Yes, do it', run }, ...(change ? [{ label: 'Change it', run: change }] : []), { label: 'Cancel', run: () => line('cancelled') }],
+  });
+
+  // Title, section, first post, then "are you sure?"
+  function threadWizard(t = {}) {
+    if (!t.title) return askFor(line('ask_title'), answer => threadWizard({ ...t, title: capitalise(answer) }));
+    if (!t.section) {
+      return { text: line('forum_which'), choices: FORUM_SECTIONS.map(([id, name]) => ({ label: name, run: () => threadWizard({ ...t, section: id }) })) };
+    }
+    if (t.body == null) {
+      return {
+        text: line('ask_body'),
+        choices: [{ label: 'Skip', run: () => threadWizard({ ...t, body: '' }) }],
+        ask: answer => threadWizard({ ...t, body: /^(no|nah|nope|skip|nothing|none)\.?$/i.test(answer) ? '' : answer }),
+      };
+    }
+    const section = FORUM_SECTIONS.find(([id]) => id === t.section)[1];
+    return confirm(line('confirm_thread', { title: t.title, section }),
+      () => forumThread(t.section, t.title, t.body),
+      () => threadWizard({ ...t, title: '' }));
+  }
+
+  function youtubeSearch() {
+    return askFor(line('ask_youtube'), query => confirm(line('confirm_youtube', { query }),
+      () => openInBrowser('www.youtube.com/results?search_query=' + encodeURIComponent(query), 'youtube_search', { query }),
+      youtubeSearch));
+  }
+
+  function webSearch() {
+    return askFor(line('ask_web'), query => confirm(line('confirm_web', { query }), () => openInBrowser(query, 'web_search', { query }), webSearch));
+  }
+
+  function pickSetting(askKey, names, confirmKey, apply) {
+    if (!window.SettingsApp) return line('no_app');
+    return {
+      text: line(askKey),
+      choices: names().map(name => ({ label: name, run: () => confirm(line(confirmKey, { colour: name, name }), () => apply(name)) })),
+    };
+  }
+
+  const TOPICS = [
+    { re: /\b(?:forums?|funforum|fun forum|threads?|posts?|msn|messenger)\b/i, offer: () => ({ text: line('offer_forum'), choices: [
+      { label: 'Make a thread', run: () => threadWizard() },
+      { label: 'Show me the news', run: () => openInBrowser('www.funforum.co.uk/news', 'news') },
+      { label: 'Just open FunForum', cmd: 'open funforum' },
+    ] }) },
+    { re: /\b(?:youtube|you tube|videos?|vids?)\b/i, offer: () => ({ text: line('offer_youtube'), choices: [
+      { label: 'A random video', run: () => openInBrowser('www.youtube.com/random', 'youtube_random') },
+      { label: 'Search YouTube', run: youtubeSearch },
+      { label: 'Just open YouTube', run: () => openInBrowser('www.youtube.com', 'youtube_open') },
+    ] }) },
+    { re: /\b(?:settings?|control panel|colou?rs?|wallpapers?|backgrounds?|themes?|aero|personali[sz]e)\b/i, offer: () => ({ text: line('offer_settings'), choices: [
+      { label: 'Window colour', run: () => pickSetting('ask_colour', () => window.SettingsApp.colourNames, 'confirm_colour', setWindowColour) },
+      { label: 'Wallpaper', run: () => pickSetting('ask_wallpaper', () => window.SettingsApp.wallpaperNames, 'confirm_wallpaper',
+        name => line('wallpaper_set', { name: window.SettingsApp.setWallpaper(name) })) },
+      { label: 'Open Control Panel', cmd: 'open control panel' },
+    ] }) },
+    { re: /\b(?:purble|games?|gaming|cakes?|pairs)\b/i, offer: () => ({ text: line('offer_purble'), choices: [
+      ...PURBLE_GAMES.map(([, name]) => ({ label: name, run: () => playPurble(name) })),
+      { label: 'Talk games on FunForum', run: () => threadWizard({ section: 'games' }) },
+    ] }) },
+    { re: /\b(?:paint|draw|drawing|doodle|picture)\b/i, offer: () => ({ text: line('offer_paint'), choices: [{ label: 'Open Paint', cmd: 'open paint' }] }) },
+    { re: /\b(?:web|internet|google|search|website|site|browser|surf|wiki|wikipedia|online)\b/i, offer: () => ({ text: line('offer_web'), choices: [
+      { label: 'Search the web', run: webSearch },
+      { label: 'Go to a website', run: () => askFor(line('ask_address'), address => openInBrowser(address, 'site_open', { address })) },
+      { label: 'Open the browser', cmd: 'open the browser' },
+    ] }) },
+  ];
+
   // Returns a function that carries out the request, or null if Clippy isn't confident.
   function understand(text) {
     for (const rule of RULES) {
@@ -1051,6 +1152,10 @@
     const app = findApp(text);
     if (app && /\b(open|launch|start|run|play|load)\b/i.test(text)) return () => openApp(app.id);
     if (app && /\b(close|quit|exit|kill|shut)\b/i.test(text)) return () => closeApp(app.id);
+    // A short message with a topic word but no action ("games", "youtube stuff") gets the guided offer, not a guess.
+    const topic = TOPICS.find(t => t.re.test(text));
+    const action = /\b(?:open|close|change|set|make|play|show|search|tell|give|start|turn|switch|find|watch)\b/i;
+    if (topic && text.split(/\s+/).length <= 3 && !action.test(text)) return topic.offer;
     const [top, second] = classifier.classify(text);
     const clearWinner = top && second && top.confidence >= 1.5 * second.confidence;
     const onlyFit = top && top.coverage === 1 && (!second || second.coverage < 0.5);
@@ -1060,9 +1165,13 @@
 
   const asReply = r => (typeof r === 'string' ? { text: r } : r);
 
-  function respond(text) {
-    if (state.choices.length && /^(y|yes|yeah|yep|sure|ok|okay|go on)\b/i.test(text)) return runChoice(state.choices[0]);
-    if (state.choices.length && /^(no|nah|nope)\b/i.test(text)) return line('no');
+  // waiting: the question Clippy was asking when this was typed ({ choices, ask }), if any
+  function respond(text, waiting = {}) {
+    if (waiting.ask && /^(cancel|stop|never ?mind|forget it)\b/i.test(text)) return line('cancelled');
+    if (waiting.ask) return waiting.ask(text);
+    const choices = waiting.choices || [];
+    if (choices.length && /^(y|yes|yeah|yep|sure|ok|okay|go on)\b/i.test(text)) return runChoice(choices[0]);
+    if (choices.length && /^(no|nah|nope)\b/i.test(text)) return choices.some(c => c.label === 'Cancel') ? line('cancelled') : line('no');
 
     // "open funforum and tell me a joke": do each part, but only if every part makes sense.
     const parts = text.split(/\s*,?\s+(?:and then|and|then)\s+/i);
@@ -1080,6 +1189,8 @@
   }
 
   function notUnderstood(text) {
+    const topic = TOPICS.find(t => t.re.test(text));
+    if (topic) return topic.offer();
     const [top, second] = classifier.classify(text);
     const guesses = [top, second].filter(g => g && g.coverage >= 0.5);
     if (guesses.length) {
@@ -1309,6 +1420,7 @@
     youEl.hidden = !opts.you;
     choicesEl.replaceChildren();
     state.choices = msg.choices || [];
+    state.ask = msg.ask || null;
     typeText(msg.text, () => renderChoices(state.choices));
     speak(msg.text);
     bounce();
@@ -1331,6 +1443,7 @@
     textEl.textContent = '...';
     choicesEl.replaceChildren();
     state.choices = [];
+    state.ask = null;
     setMood('think');
   }
 
@@ -1356,7 +1469,8 @@
   function handleInput(raw) {
     const text = raw.trim();
     if (!text) return;
-    reply(text, () => respond(text));
+    const waiting = { choices: state.choices, ask: state.ask };
+    reply(text, () => respond(text, waiting));
   }
 
   function handleChoice(choice) {
@@ -1382,6 +1496,7 @@
     clearInterval(state.typing);
     state.typingDone = null;
     state.choices = [];
+    state.ask = null;
     bubble.hidden = true;
   }
 

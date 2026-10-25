@@ -60,6 +60,9 @@ For "write a letter", Clippy types into the focused text box, or into a `textare
 - "Open a random YouTube video", "Search YouTube for cats", "Search the web for Nottingham", "Show me the news"
 - "Play cakes" / "Play pairs" / "Play crack the code" (opens Purble Place straight into that game)
 - "Make the windows pumpkin" (Aero colour), "Change the wallpaper"
+- Just say a topic ("forum", "youtube", "settings", "games", "web", "drawing") and Clippy offers what it can do there,
+  asks what it needs (thread title, section, first post, search words, colour...) and checks before doing it.
+  Answer in the box or press the buttons; "cancel" stops.
 - "Write a letter", or type "Dear Sam," in any text box
 - "Call me Anand", "Remember that the demo is at 10am", "Show my notes"
 - "What's open?", "Close everything"

@@ -359,13 +359,20 @@
   window.SettingsApp = {
     open,
     applySaved: apply,
-    // For Clippy: switch to the next wallpaper, or a window colour by name. Both return the new name.
+    // For Clippy: switch to the next wallpaper, or a wallpaper / window colour by name. All return the new name.
     nextWallpaper() {
       const i = WALLPAPERS.findIndex(w => w.id === prefs.wallpaper);
       const next = WALLPAPERS[(i + 1) % WALLPAPERS.length];
       set({ wallpaper: next.id });
       return next.name;
     },
+    setWallpaper(name) {
+      const wallpaper = WALLPAPERS.find(w => w.id === String(name).toLowerCase() || w.name.toLowerCase() === String(name).toLowerCase());
+      if (!wallpaper) return null;
+      set({ wallpaper: wallpaper.id });
+      return wallpaper.name;
+    },
+    get wallpaperNames() { return WALLPAPERS.map(w => w.name); },
     setColour(name) {
       const colour = COLOURS.find(c => c.id === String(name).toLowerCase() || c.name.toLowerCase() === String(name).toLowerCase());
       if (!colour) return null;
