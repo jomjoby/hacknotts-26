@@ -473,9 +473,38 @@ body{
     opacity: 0.7;
 }
 
-/* Adverts (filled in by ads.js): a picture of each team's project with its cool title stuck on a corner, pulsing. */
+/* Adverts (filled in by ads.js). The page is a grid: the side columns share whatever room is left
+   beside the 800px page, the adverts scale to fit them, and ads.js adds as many as fit down the page. */
+body{
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) 800px minmax(100px, 1fr);
+    column-gap: 24px;
+    align-items: start;
+}
+
+#mainBar{
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+}
+
+#leftBar, #rightBar{
+    position: static;
+    grid-row: 1;
+    align-self: stretch;
+    justify-self: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 230px;
+    padding-top: 20px;
+}
+
+#leftBar{ grid-column: 1; }
+#rightBar{ grid-column: 3; }
+
 .sideBar .advert{
     position: relative;
+    container-type: inline-size;
     margin-bottom: 40px;
     border: 2px solid black;
     background: black;
@@ -484,18 +513,24 @@ body{
 .sideBar .advert img{
     display: block;
     width: 100%;
+    height: auto;
     margin: 0;
     border: 0;
 }
 
+.sideBar .advert:last-child{
+    margin-bottom: 0;
+}
+
+/* The cool title, stuck on the top-left corner and pulsing. It grows with the advert. */
 .sideBar .advert .adTitle{
     position: absolute;
     top: -16px;
     left: -18px;
     z-index: 1;
     width: auto;
-    height: 48px;
-    max-width: 150px;
+    height: clamp(30px, 32cqw, 64px);
+    max-width: 105cqw;
     object-fit: contain;
     filter: drop-shadow(0 0 4px black);
     animation: adPulse 1.6s ease-in-out infinite;
@@ -507,7 +542,7 @@ body{
     background: linear-gradient(#ffef3a, #ffb400);
     border-top: 2px solid black;
     color: #c00000;
-    font: bold 12px "Comic Sans MS", "Comic Neue", Verdana, sans-serif;
+    font: bold clamp(10px, 8cqw, 15px) "Comic Sans MS", "Comic Neue", Verdana, sans-serif;
     text-align: center;
     line-height: 1.2;
 }
@@ -519,13 +554,4 @@ body{
 @keyframes adPulse{
     0%, 100%{ transform: rotate(-8deg) scale(0.85); }
     50%{ transform: rotate(-8deg) scale(1.1); }
-}
-
-/* When the window is too narrow for the side bars (e.g. inside the OS browser), keep them at the
-   sides and let the page scroll sideways instead of the adverts covering it. */
-@media (max-width: 1200px){
-    body{
-        position: relative;
-        min-width: 1180px;
-    }
 }
