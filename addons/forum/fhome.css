@@ -501,6 +501,17 @@ body{
     animation: adPulse 1.6s ease-in-out infinite;
 }
 
+.sideBar .advert .adSlogan{
+    margin: 0;
+    padding: 5px 4px;
+    background: linear-gradient(#ffef3a, #ffb400);
+    border-top: 2px solid black;
+    color: #c00000;
+    font: bold 12px "Comic Sans MS", "Comic Neue", Verdana, sans-serif;
+    text-align: center;
+    line-height: 1.2;
+}
+
 /* Each advert pulses at its own pace, so they don't all throb together. */
 .sideBar .advert:nth-child(2n) .adTitle{ animation-duration: 1.3s; }
 .sideBar .advert:nth-child(3n) .adTitle{ animation-duration: 1.9s; }
