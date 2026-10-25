@@ -473,24 +473,38 @@ body{
     opacity: 0.7;
 }
 
-/* Adverts: when the window is too narrow for the side bars (e.g. inside the OS browser),
-   show them as rows above and below the page instead of on top of it. */
-.sideBar img.advert{
-    width: 150px;
+/* Adverts (filled in by ads.js): a cool title over a picture of each team's project. */
+.sideBar .advert{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 40px;
+    padding: 6px 0;
+    border: 2px solid black;
+    background: #0b0b2a;
+    color: white;
+    text-decoration: none;
 }
 
-@media (max-width: 1200px){
-    #leftBar, #rightBar{
-        position: static;
-        flex-direction: row;
-        justify-content: center;
-        align-items: flex-start;
-        gap: 20px;
-        width: auto;
-        margin: 15px 0;
-    }
+.sideBar .advert img{
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: 0;
+}
 
-    .sideBar img{
-        margin-bottom: 0;
+.sideBar .advert .adTitle{
+    width: auto;
+    max-width: 140px;
+    max-height: 60px;
+}
+
+/* When the window is too narrow for the side bars (e.g. inside the OS browser), keep them at the
+   sides and let the page scroll sideways instead of the adverts covering it. */
+@media (max-width: 1200px){
+    body{
+        position: relative;
+        min-width: 1180px;
     }
 }

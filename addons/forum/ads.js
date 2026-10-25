@@ -1,18 +1,35 @@
 // Fills the advert slots (.sideBar img) with the other HackNotts teams' projects, in a random order
-// each visit. To add a team, add its pictures (in images/ads/) to ADS.
+// each visit: a title made on cooltext.com over a picture (both in images/ads/).
+// To add a team, add it to ADS (title can be left out).
 (function () {
     const ADS = [
-        ['team1-a.jpg', 'team1-b.jpg'],
-        ['team2-a.jpg'],
-        ['team3-a.jpg'],
-        ['team4-a.jpg'],
+        { name: 'Eye tracking Instagram reel scrolling', image: 'eye-tracking.jpg', title: 'title-eye.png' },
+        { name: 'Finger tracking skateboard game', image: 'finger-skate.jpg', title: 'title-skate.png' },
+        { name: 'Remaking PictoChat on the Nintendo DS', image: 'pictochat.jpg', title: 'title-picto.png' },
+        { name: 'A social foundation for young adults in an increasingly divisive world', image: 'social-foundation.jpg', title: 'title-social.png' },
+        { name: 'Cardboard arcade', image: 'cardboard-arcade.jpg', title: 'title-arcade.png' },
+        { name: 'Scam awareness app', image: 'scam-awareness.jpg', title: 'title-scam.png' },
+        { name: 'Squid Game text based game', image: 'squid-game.jpg', title: 'title-squid.png' },
+        { name: 'Another HackNotts project', image: 'team4.jpg' },
     ];
 
-    const teams = ADS.map(images => ({ images, next: 0 })).sort(() => Math.random() - 0.5);
+    const folder = '../../images/ads/';
+    const ads = ADS.slice().sort(() => Math.random() - 0.5);
     document.querySelectorAll('.sideBar img').forEach((slot, i) => {
-        const team = teams[i % teams.length];
-        slot.src = '../../images/ads/' + team.images[team.next++ % team.images.length];
-        slot.alt = 'Advert';
-        slot.classList.add('advert');
+        const ad = ads[i % ads.length];
+        const box = document.createElement('div');
+        box.className = 'advert';
+        box.title = ad.name;
+        if (ad.title) {
+            const title = document.createElement('img');
+            title.className = 'adTitle';
+            title.src = folder + ad.title;
+            title.alt = ad.name;
+            box.appendChild(title);
+        }
+        slot.replaceWith(box);
+        slot.src = folder + ad.image;
+        slot.alt = ad.title ? '' : ad.name;
+        box.appendChild(slot);
     });
 })();
